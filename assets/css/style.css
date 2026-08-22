@@ -886,7 +886,8 @@ fieldset.collapsible > legend.collapsible-header {
     margin-bottom: 12px;
 }
 
-.csr-category-cards {
+.csr-category-cards,
+.csr-category-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 14px;
@@ -915,12 +916,17 @@ fieldset.collapsible > legend.collapsible-header {
     transform: translateY(-2px);
 }
 
+.csr-category-card:focus-within {
+    outline: 2px solid #243b7e;
+    outline-offset: 2px;
+}
+
 .csr-category-card .csr-category-toggle {
     position: absolute;
     top: 8px;
     right: 8px;
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     margin: 0;
 }
 
@@ -948,14 +954,92 @@ fieldset.collapsible > legend.collapsible-header {
 }
 
 /* Mobile responsiveness for category cards */
+/* Contextual subcategory panels (Issue #8) */
+.csr-category-detail-panel {
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    background: #fafbff;
+}
+
+.csr-category-detail-panel > label {
+    font-weight: bold;
+    color: #243b7e;
+}
+
+.csr-category-detail-panel > input[type="number"] {
+    min-height: 44px;
+    max-width: 160px;
+}
+
+.csr-subcategory-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    margin-bottom: 8px;
+}
+
+.csr-subcategory-row input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.csr-subcategory-row input[type="number"] {
+    min-width: 88px;
+    min-height: 44px;
+}
+
+.csr-review-summary {
+    display: grid;
+    gap: 12px;
+    margin: 16px 0 24px;
+}
+
+.csr-review-category {
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 12px 16px;
+    background: #fff;
+}
+
+.csr-review-category h4 {
+    margin: 0 0 6px;
+    color: #243b7e;
+}
+
+.csr-review-weight {
+    margin: 0 0 8px;
+    font-weight: bold;
+}
+
+.csr-review-subcategories {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.csr-review-empty {
+    margin: 0;
+    color: #555;
+}
+
+.csr-review-count {
+    color: #243b7e;
+}
+
 @media (max-width: 768px) {
-    .csr-category-cards {
+    .csr-category-cards,
+    .csr-category-grid {
         grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
         gap: 10px;
     }
 
     .csr-category-card {
         padding: 12px 8px;
+        min-height: 88px;
     }
 
     .csr-category-icon {
@@ -964,5 +1048,13 @@ fieldset.collapsible > legend.collapsible-header {
 
     .csr-category-label {
         font-size: 12px;
+    }
+
+    .csr-category-detail-panel {
+        padding: 12px;
+    }
+
+    .csr-subcategory-row {
+        justify-content: space-between;
     }
 }
