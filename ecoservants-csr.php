@@ -328,10 +328,12 @@ add_action('init', function () {
 
 // Enqueue scripts and styles
 function ecoservants_enqueue_scripts() {
-    $version = '1.1.4-new-report-reset';
+    $version = '1.1.7-issue-8-subcategory-ux';
     wp_enqueue_style('ecoservants-style', plugin_dir_url(__FILE__) . 'assets/css/style.css', array(), $version);
     wp_enqueue_script('ecoservants-carousel', plugin_dir_url(__FILE__) . 'assets/js/carousel.js', array(), $version, true);
     wp_enqueue_script('csr-guided-wrapper', plugin_dir_url(__FILE__) . 'assets/js/csr-guided-wrapper.js', array(), $version, true);
+    wp_enqueue_script('csr-category-cards', plugin_dir_url(__FILE__) . 'assets/js/csr-category-cards.js', array(), $version, true);
+    wp_enqueue_script('csr-review-summary', plugin_dir_url(__FILE__) . 'assets/js/csr-review-summary.js', array('csr-guided-wrapper', 'csr-category-cards'), $version, true);
     wp_enqueue_script('csr-wall-modal', plugin_dir_url(__FILE__) . 'assets/js/csr-wall-modal.js', array(), $version, true);
 }
 add_action('wp_enqueue_scripts', 'ecoservants_enqueue_scripts');

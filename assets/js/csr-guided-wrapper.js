@@ -102,6 +102,10 @@
             }
 
             updateProgress();
+
+            form.dispatchEvent(new CustomEvent('csr-step-shown', {
+                detail: { index: index, isLast: isLastStep }
+            }));
         }
 
         backBtn.addEventListener('click', function () {
