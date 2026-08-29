@@ -890,7 +890,7 @@ fieldset.collapsible > legend.collapsible-header {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 14px;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
 }
 
 .csr-category-card {
@@ -899,20 +899,21 @@ fieldset.collapsible > legend.collapsible-header {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
     padding: 16px 10px;
     border: 2px solid #ddd;
     border-radius: 12px;
     background: #fff;
     cursor: pointer;
     text-align: center;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease, background-color 0.2s ease;
     margin-bottom: 0;
 }
 
 .csr-category-card:hover {
     border-color: #243b7e;
     transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(36, 59, 126, 0.1);
 }
 
 .csr-category-card .csr-category-toggle {
@@ -922,6 +923,7 @@ fieldset.collapsible > legend.collapsible-header {
     width: 18px;
     height: 18px;
     margin: 0;
+    cursor: pointer;
 }
 
 .csr-category-card-selected {
@@ -931,20 +933,63 @@ fieldset.collapsible > legend.collapsible-header {
 }
 
 .csr-category-icon {
-    font-size: 28px;
-    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    color: #243b7e;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.csr-category-icon svg,
+.csr-category-icon-svg {
+    width: 28px;
+    height: 28px;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.csr-category-card-selected .csr-category-icon {
+    color: #243b7e;
+    transform: scale(1.1);
 }
 
 .csr-category-label {
-    font-size: 14px;
-    font-weight: bold;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
     color: #243b7e;
 }
 
-.csr-category-cards-note {
-    font-size: 12px;
-    color: #888;
-    margin-bottom: 20px;
+/* Admin Post Edit Meta Box Category Icons */
+.csr-admin-category-icon {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    margin-right: 6px;
+    color: #243b7e;
+}
+
+.csr-admin-category-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Public Summary Category Icons */
+.csr-summary-category-icon {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    margin-right: 4px;
+    color: #243b7e;
+}
+
+.csr-summary-category-icon svg {
+    width: 16px;
+    height: 16px;
 }
 
 /* Mobile responsiveness for category cards */
@@ -959,10 +1004,62 @@ fieldset.collapsible > legend.collapsible-header {
     }
 
     .csr-category-icon {
-        font-size: 24px;
+        width: 26px;
+        height: 26px;
+    }
+
+    .csr-category-icon svg,
+    .csr-category-icon-svg {
+        width: 24px;
+        height: 24px;
     }
 
     .csr-category-label {
         font-size: 12px;
     }
+}
+
+
+/* Location Field & Action Button Styling (Spacing & Button Alignment) */
+.csr-location-field {
+    margin-bottom: 16px;
+}
+
+.csr-location-actions {
+    margin-top: 12px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.csr-use-location {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: #243b7e;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.csr-use-location:hover {
+    background-color: #1a2b5c;
+}
+
+.csr-use-location:active {
+    transform: translateY(1px);
+}
+
+.csr-location-help {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    color: #666;
 }

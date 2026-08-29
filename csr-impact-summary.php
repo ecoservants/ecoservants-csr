@@ -46,7 +46,7 @@ function ecoservants_summary_top_categories($totals, $limit) {
     foreach (ecoservants_summary_weight_defs() as $def) {
         $value = isset($totals[$def['key']]) ? (float) $totals[$def['key']] : 0;
         if ($value > 0) {
-            $rows[] = ['label' => $def['label'], 'value' => $value];
+            $rows[] = ['key' => $def['key'], 'label' => $def['label'], 'value' => $value];
         }
     }
 
@@ -59,13 +59,16 @@ function ecoservants_summary_top_categories($totals, $limit) {
 }
 
 // One circular metric card - same markup as [top_impact] so the CSS applies
-function ecoservants_summary_render_metric($value, $unit, $label) {
+function ecoservants_summary_render_metric($value, $unit, $label, $category_key = '') {
     $percent = 75;
     $circ    = 2 * pi() * 44;
     $offset  = $circ * (1 - $percent / 100);
     $display = is_numeric($value)
         ? number_format($value, ($unit === 'lbs' ? 1 : 0))
         : $value;
+    $icon_svg = ($category_key && function_exists('csr_get_category_icon_svg'))
+        ? csr_get_category_icon_svg($category_key, ['size' => 18, 'class' => 'csr-summary-category-icon-svg'])
+        : '';
     ?>
     <div class="csr-circular-metric" title="<?php echo esc_attr($label); ?>">
         <div class="csr-circular-svg-wrap">
@@ -89,12 +92,18 @@ function ecoservants_summary_render_metric($value, $unit, $label) {
                 <?php endif; ?>
             </div>
         </div>
-        <div class="csr-circular-label"><?php echo esc_html($label); ?></div>
+        <div class="csr-circular-label">
+            <?php if ($icon_svg) : ?>
+                <span class="csr-summary-category-icon" aria-hidden="true"><?php echo $icon_svg; ?></span>
+            <?php endif; ?>
+            <?php echo esc_html($label); ?>
+        </div>
     </div>
     <?php
 }
 
 function ecoservants_impact_summary_shortcode($atts = []) {
+    if (function_exists('ecoservants_enqueue_scripts')) { ecoservants_enqueue_scripts(); }
     // Attributes: [csr_impact_summary year="2026" top="4"]
     $atts = shortcode_atts([
         'year' => '',
@@ -167,7 +176,7 @@ function ecoservants_impact_summary_shortcode($atts = []) {
                 <h3>Top Categories</h3>
                 <div class="csr-circular-metrics">
                     <?php foreach ($top as $row) : ?>
-                        <?php ecoservants_summary_render_metric($row['value'], 'lbs', $row['label']); ?>
+                        <?php ecoservants_summary_render_metric($row['value'], 'lbs', $row['label'], $row['key']); ?>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>

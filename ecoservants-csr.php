@@ -2,7 +2,7 @@
 /*
 Plugin Name: EcoServants CSR
 Description: A plugin for environmental volunteers to submit Community Site Reports (CSR) after cleanup events.
-Version: 1.1.7-guided-interim
+Version: 1.1.8-category-icons
 By: EcoServants - Thanks to our developers
 Author URI: https://ecoservantsproject.org
 */
@@ -10,6 +10,10 @@ Author URI: https://ecoservantsproject.org
 // Exit if accessed directly
 if (!defined('ABSPATH')) {
     exit;
+}
+
+if (!defined('ECOSERVANTS_CSR_VERSION')) {
+    define('ECOSERVANTS_CSR_VERSION', '1.1.8-category-icons');
 }
 
 // Register custom post type for CSR Reports with locked-down capabilities
@@ -326,15 +330,131 @@ add_action('init', function () {
     wp_send_json(['items' => $items]);
 });
 
+/**
+ * Helper function to retrieve standardized SVG icon markup for a CSR category.
+ *
+ * @param string $category_key Category key or alias (e.g. 'plastic', 'plastic_waste', 'styrofoam_hazardous', etc.)
+ * @param array  $args         Optional settings: 'class', 'size', 'aria_hidden', 'alt'
+ * @return string SVG HTML markup
+ */
+function csr_get_category_icon_svg( $category_key, $args = [] ) {
+    static $svg_cache = [];
+
+    $key_map = [
+        'unsorted_litter'           => 'unsorted-litter',
+        'unsorted'                  => 'unsorted-litter',
+        'plastic'                   => 'plastic',
+        'plastic_waste'             => 'plastic',
+        'paper'                     => 'paper',
+        'paper_waste'               => 'paper',
+        'food'                      => 'food',
+        'food_waste'                => 'food',
+        'metal'                     => 'metal',
+        'metal_waste'               => 'metal',
+        'glass'                     => 'glass',
+        'glass_waste'               => 'glass',
+        'cigarette'                 => 'cigarette',
+        'cigarette_litter'          => 'cigarette',
+        'textiles'                  => 'textiles',
+        'medical'                   => 'medical',
+        'medical_waste'             => 'medical',
+        'sanitary'                  => 'sanitary',
+        'sanitary_products'         => 'sanitary',
+        'fishing'                   => 'fishing',
+        'fishing_gear'              => 'fishing',
+        'styrofoam_hazardous'       => 'styrofoam-hazardous',
+        'styrofoam_hazardous_waste' => 'styrofoam-hazardous',
+        'miscellaneous'             => 'miscellaneous',
+        'derelict'                  => 'derelict',
+        'derelict_items'            => 'derelict',
+        'invasive'                  => 'invasive-species',
+        'invasive_species'          => 'invasive-species',
+        'invasive_species_removed'  => 'invasive-species',
+        'invasive_species_weight'   => 'invasive-species',
+        'invasive-species'          => 'invasive-species',
+    ];
+
+    $slug = isset($key_map[$category_key]) ? $key_map[$category_key] : sanitize_title($category_key);
+    $icon_path = plugin_dir_path(__FILE__) . 'assets/icons/' . $slug . '.svg';
+
+    if (!isset($svg_cache[$slug])) {
+        if (file_exists($icon_path)) {
+            $svg_cache[$slug] = file_get_contents($icon_path);
+        } else {
+            $svg_cache[$slug] = '';
+        }
+    }
+
+    $svg = $svg_cache[$slug];
+
+    if (empty($svg)) {
+        return '';
+    }
+
+    $class       = isset($args['class']) ? esc_attr($args['class']) : 'csr-category-icon-svg';
+    $size        = isset($args['size']) ? (int) $args['size'] : 0;
+    $aria_hidden = isset($args['aria_hidden']) ? (bool) $args['aria_hidden'] : true;
+    $alt         = isset($args['alt']) ? esc_attr($args['alt']) : '';
+
+    if ($class !== 'csr-category-icon-svg') {
+        $svg = preg_replace('/class="[^"]*"/', '', $svg);
+        $svg = str_replace('<svg ', '<svg class="' . $class . '" ', $svg);
+    } else {
+        $svg = str_replace('<svg ', '<svg class="csr-category-icon-svg" ', $svg);
+    }
+
+    if ($size > 0) {
+        $svg = preg_replace('/width="[^"]*"/', 'width="' . $size . '"', $svg);
+        $svg = preg_replace('/height="[^"]*"/', 'height="' . $size . '"', $svg);
+    }
+
+    if ($aria_hidden) {
+        $svg = str_replace('<svg ', '<svg aria-hidden="true" role="img" ', $svg);
+    } else if ($alt !== '') {
+        $svg = str_replace('<svg ', '<svg role="img" aria-label="' . $alt . '" ', $svg);
+    }
+
+    return $svg;
+}
+
+/**
+ * Helper function to return all major category icon SVGs mapped by key.
+ *
+ * @return array
+ */
+function csr_get_all_category_icons() {
+    $categories = [
+        'unsorted_litter', 'plastic', 'paper', 'food', 'metal', 'glass',
+        'cigarette', 'textiles', 'medical', 'sanitary', 'fishing',
+        'styrofoam_hazardous', 'miscellaneous', 'derelict', 'invasive_species'
+    ];
+    $icons = [];
+    foreach ($categories as $cat) {
+        $icons[$cat] = csr_get_category_icon_svg($cat);
+    }
+    return $icons;
+}
+
 // Enqueue scripts and styles
 function ecoservants_enqueue_scripts() {
-    $version = '1.1.4-new-report-reset';
+    $version = defined('ECOSERVANTS_CSR_VERSION') ? ECOSERVANTS_CSR_VERSION : '1.1.8-category-icons';
     wp_enqueue_style('ecoservants-style', plugin_dir_url(__FILE__) . 'assets/css/style.css', array(), $version);
     wp_enqueue_script('ecoservants-carousel', plugin_dir_url(__FILE__) . 'assets/js/carousel.js', array(), $version, true);
     wp_enqueue_script('csr-guided-wrapper', plugin_dir_url(__FILE__) . 'assets/js/csr-guided-wrapper.js', array(), $version, true);
+    wp_enqueue_script('csr-category-cards', plugin_dir_url(__FILE__) . 'assets/js/csr-category-cards.js', array(), $version, true);
     wp_enqueue_script('csr-wall-modal', plugin_dir_url(__FILE__) . 'assets/js/csr-wall-modal.js', array(), $version, true);
 }
 add_action('wp_enqueue_scripts', 'ecoservants_enqueue_scripts');
+
+// Enqueue admin styles and icon assets for CSR meta box screens
+function ecoservants_admin_enqueue_scripts($hook) {
+    global $post_type;
+    if ($post_type === 'csr_report' || (isset($_GET['page']) && strpos($_GET['page'], 'csr') !== false)) {
+        $version = defined('ECOSERVANTS_CSR_VERSION') ? ECOSERVANTS_CSR_VERSION : '1.1.8-category-icons';
+        wp_enqueue_style('ecoservants-admin-style', plugin_dir_url(__FILE__) . 'assets/css/style.css', array(), $version);
+    }
+}
+add_action('admin_enqueue_scripts', 'ecoservants_admin_enqueue_scripts');
 
 // Include form template and handler
 include plugin_dir_path(__FILE__) . 'form-handler.php';
@@ -344,6 +464,7 @@ include plugin_dir_path(__FILE__) . 'csr-impact-summary.php';
 
 // Register shortcode for the form
 function ecoservants_csr_form_shortcode() {
+    if (function_exists('ecoservants_enqueue_scripts')) { ecoservants_enqueue_scripts(); }
     $submitted = isset($_GET['submitted']) && sanitize_text_field(wp_unslash($_GET['submitted'])) === 'true';
     $report_id = isset($_GET['csr_report_id']) ? absint($_GET['csr_report_id']) : 0;
 
@@ -404,6 +525,7 @@ add_shortcode('csr_form', 'ecoservants_csr_form_shortcode');
 
 // Register shortcode for the Wall of Fame
 function ecoservants_wall_of_fame_shortcode($atts = []) {
+    if (function_exists('ecoservants_enqueue_scripts')) { ecoservants_enqueue_scripts(); }
     $atts = shortcode_atts(
         [
             'limit' => 50,
@@ -579,11 +701,24 @@ add_action('init', 'ecoservants_wall_of_fame_iframe_endpoint');
 // Add a custom endpoint for the CSR form iframe
 function ecoservants_csr_form_iframe_endpoint() {
     if (isset($_GET['csr_form_iframe'])) {
-        header('Content-Type: text/html');
+        $version = defined('ECOSERVANTS_CSR_VERSION') ? ECOSERVANTS_CSR_VERSION : '1.1.8-category-icons';
+        $css_url = plugin_dir_url(__FILE__) . 'assets/css/style.css?v=' . urlencode($version);
+        $carousel_url = plugin_dir_url(__FILE__) . 'assets/js/carousel.js?v=' . urlencode($version);
+        $wrapper_url = plugin_dir_url(__FILE__) . 'assets/js/csr-guided-wrapper.js?v=' . urlencode($version);
+        $cards_url = plugin_dir_url(__FILE__) . 'assets/js/csr-category-cards.js?v=' . urlencode($version);
+        $modal_url = plugin_dir_url(__FILE__) . 'assets/js/csr-wall-modal.js?v=' . urlencode($version);
+
+        header('Content-Type: text/html; charset=' . get_option('blog_charset', 'UTF-8'));
         echo '<!DOCTYPE html><html><head>';
-        echo '<link rel="stylesheet" href="' . plugin_dir_url(__FILE__) . 'assets/css/style.css">';
+        echo '<meta charset="' . esc_attr(get_option('blog_charset', 'UTF-8')) . '">';
+        echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
+        echo '<link rel="stylesheet" href="' . esc_url($css_url) . '">';
         echo '</head><body>';
         echo do_shortcode('[csr_form]');
+        echo '<script src="' . esc_url($carousel_url) . '"></script>';
+        echo '<script src="' . esc_url($wrapper_url) . '"></script>';
+        echo '<script src="' . esc_url($cards_url) . '"></script>';
+        echo '<script src="' . esc_url($modal_url) . '"></script>';
         echo '</body></html>';
         exit;
     }
@@ -985,7 +1120,7 @@ function ecoservants_display_meta_boxes($post) {
         <input type="text" id="csr_location" name="csr_location" value="<?php echo esc_attr($location); ?>" required>
     </p>
     <p>
-        <label for="csr_unsorted_litter_weight">Unsorted Litter (lbs):</label>
+        <label for="csr_unsorted_litter_weight"><span class="csr-admin-category-icon" aria-hidden="true"><?php echo csr_get_category_icon_svg('unsorted_litter', ['size' => 18]); ?></span> Unsorted Litter (lbs):</label>
         <input type="number" id="csr_unsorted_litter_weight" name="csr_unsorted_litter_weight" value="<?php echo esc_attr($unsorted_litter_weight); ?>" step="0.01" min="0">
         <fieldset>
             <legend>Unsorted Litter Subcategories:</legend>
@@ -1006,7 +1141,7 @@ function ecoservants_display_meta_boxes($post) {
         $counts_for_category  = ($count_meta_key && isset($counts_map[$count_meta_key])) ? $counts_map[$count_meta_key] : [];
     ?>
         <p>
-            <label for="<?php echo esc_attr($category['weight_meta']); ?>"><?php echo esc_html($category['label']); ?> (lbs):</label>
+            <label for="<?php echo esc_attr($category['weight_meta']); ?>"><span class="csr-admin-category-icon" aria-hidden="true"><?php echo csr_get_category_icon_svg($key, ['size' => 18]); ?></span> <?php echo esc_html($category['label']); ?> (lbs):</label>
             <input type="number" id="<?php echo esc_attr($category['weight_meta']); ?>" name="<?php echo esc_attr($category['weight_meta']); ?>" step="0.01" value="<?php echo esc_attr($weight); ?>">
             <fieldset>
                 <legend><?php echo esc_html($category['label']); ?> Subcategories:</legend>
