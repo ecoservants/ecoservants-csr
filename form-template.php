@@ -107,9 +107,80 @@
             <h3>What did you collect?</h3>
             <p>Select every category that applies. Only the categories you choose will expand for weights and item counts.</p>
         </div>
-        <div id="csr-category-card-grid" class="csr-category-grid" aria-label="Waste and material categories"></div>
+        <div id="csr-category-card-grid" class="csr-category-cards" aria-label="Waste and material categories">
+            <label class="csr-category-card">
+                <input type="checkbox" class="csr-category-toggle" data-category="unsorted_litter">
+                <span class="csr-category-icon" aria-hidden="true"><?php echo function_exists('csr_get_category_icon_svg') ? csr_get_category_icon_svg('unsorted_litter') : ''; ?></span>
+                <span class="csr-category-label">Unsorted Litter</span>
+            </label>
+            <label class="csr-category-card">
+                <input type="checkbox" class="csr-category-toggle" data-category="plastic">
+                <span class="csr-category-icon" aria-hidden="true"><?php echo function_exists('csr_get_category_icon_svg') ? csr_get_category_icon_svg('plastic') : ''; ?></span>
+                <span class="csr-category-label">Plastic Waste</span>
+            </label>
+            <label class="csr-category-card">
+                <input type="checkbox" class="csr-category-toggle" data-category="paper">
+                <span class="csr-category-icon" aria-hidden="true"><?php echo function_exists('csr_get_category_icon_svg') ? csr_get_category_icon_svg('paper') : ''; ?></span>
+                <span class="csr-category-label">Paper Waste</span>
+            </label>
+            <label class="csr-category-card">
+                <input type="checkbox" class="csr-category-toggle" data-category="food">
+                <span class="csr-category-icon" aria-hidden="true"><?php echo function_exists('csr_get_category_icon_svg') ? csr_get_category_icon_svg('food') : ''; ?></span>
+                <span class="csr-category-label">Food Waste</span>
+            </label>
+            <label class="csr-category-card">
+                <input type="checkbox" class="csr-category-toggle" data-category="metal">
+                <span class="csr-category-icon" aria-hidden="true"><?php echo function_exists('csr_get_category_icon_svg') ? csr_get_category_icon_svg('metal') : ''; ?></span>
+                <span class="csr-category-label">Metal Waste</span>
+            </label>
+            <label class="csr-category-card">
+                <input type="checkbox" class="csr-category-toggle" data-category="glass">
+                <span class="csr-category-icon" aria-hidden="true"><?php echo function_exists('csr_get_category_icon_svg') ? csr_get_category_icon_svg('glass') : ''; ?></span>
+                <span class="csr-category-label">Glass Waste</span>
+            </label>
+            <label class="csr-category-card">
+                <input type="checkbox" class="csr-category-toggle" data-category="cigarette">
+                <span class="csr-category-icon" aria-hidden="true"><?php echo function_exists('csr_get_category_icon_svg') ? csr_get_category_icon_svg('cigarette') : ''; ?></span>
+                <span class="csr-category-label">Cigarette Litter</span>
+            </label>
+            <label class="csr-category-card">
+                <input type="checkbox" class="csr-category-toggle" data-category="textiles">
+                <span class="csr-category-icon" aria-hidden="true"><?php echo function_exists('csr_get_category_icon_svg') ? csr_get_category_icon_svg('textiles') : ''; ?></span>
+                <span class="csr-category-label">Textiles</span>
+            </label>
+            <label class="csr-category-card">
+                <input type="checkbox" class="csr-category-toggle" data-category="medical">
+                <span class="csr-category-icon" aria-hidden="true"><?php echo function_exists('csr_get_category_icon_svg') ? csr_get_category_icon_svg('medical') : ''; ?></span>
+                <span class="csr-category-label">Medical Waste</span>
+            </label>
+            <label class="csr-category-card">
+                <input type="checkbox" class="csr-category-toggle" data-category="sanitary">
+                <span class="csr-category-icon" aria-hidden="true"><?php echo function_exists('csr_get_category_icon_svg') ? csr_get_category_icon_svg('sanitary') : ''; ?></span>
+                <span class="csr-category-label">Sanitary Products</span>
+            </label>
+            <label class="csr-category-card">
+                <input type="checkbox" class="csr-category-toggle" data-category="fishing">
+                <span class="csr-category-icon" aria-hidden="true"><?php echo function_exists('csr_get_category_icon_svg') ? csr_get_category_icon_svg('fishing') : ''; ?></span>
+                <span class="csr-category-label">Fishing Gear</span>
+            </label>
+            <label class="csr-category-card">
+                <input type="checkbox" class="csr-category-toggle" data-category="styrofoam_hazardous">
+                <span class="csr-category-icon" aria-hidden="true"><?php echo function_exists('csr_get_category_icon_svg') ? csr_get_category_icon_svg('styrofoam_hazardous') : ''; ?></span>
+                <span class="csr-category-label">Styrofoam &amp; Hazardous</span>
+            </label>
+            <label class="csr-category-card">
+                <input type="checkbox" class="csr-category-toggle" data-category="miscellaneous">
+                <span class="csr-category-icon" aria-hidden="true"><?php echo function_exists('csr_get_category_icon_svg') ? csr_get_category_icon_svg('miscellaneous') : ''; ?></span>
+                <span class="csr-category-label">Miscellaneous</span>
+            </label>
+            <label class="csr-category-card">
+                <input type="checkbox" class="csr-category-toggle" data-category="derelict">
+                <span class="csr-category-icon" aria-hidden="true"><?php echo function_exists('csr_get_category_icon_svg') ? csr_get_category_icon_svg('derelict') : ''; ?></span>
+                <span class="csr-category-label">Derelict Items</span>
+            </label>
+        </div>
         <div class="csr-category-details">
-        <div>
+        <div data-category-detail="unsorted_litter">
             <label for="csr_unsorted_litter_weight">Unsorted Litter (lbs):</label>
             <input type="number" id="csr_unsorted_litter_weight" name="csr_unsorted_litter_weight" step="0.01" min="0" aria-label="Unsorted Litter">
             <fieldset class="collapsible">
@@ -126,7 +197,7 @@
                 </div>
             </fieldset>
         </div>
-        <div>
+        <div data-category-detail="plastic">
             <label for="csr_plastic_waste_weight">Plastic Waste (lbs):</label>
             <input type="number" id="csr_plastic_waste_weight" name="csr_plastic_waste_weight" step="0.01">
             <fieldset class="collapsible">
@@ -191,7 +262,7 @@
                 </div>
             </fieldset>
         </div>
-        <div>
+        <div data-category-detail="paper">
             <label for="csr_paper_waste_weight">Paper Waste (lbs):</label>
             <input type="number" id="csr_paper_waste_weight" name="csr_paper_waste_weight" step="0.01">
             <fieldset class="collapsible">
@@ -244,7 +315,7 @@
                 </div>
             </fieldset>
         </div>
-        <div>
+        <div data-category-detail="food">
             <label for="csr_food_waste_weight">Food Waste (lbs):</label>
             <input type="number" id="csr_food_waste_weight" name="csr_food_waste_weight" step="0.01">
             <fieldset class="collapsible">
@@ -273,7 +344,7 @@
                 </div>
             </fieldset>
         </div>
-        <div>
+        <div data-category-detail="metal">
             <label for="csr_metal_waste_weight">Metal Waste (lbs):</label>
             <input type="number" id="csr_metal_waste_weight" name="csr_metal_waste_weight" step="0.01">
             <fieldset class="collapsible">
@@ -326,7 +397,7 @@
                 </div>
             </fieldset>
         </div>
-        <div>
+        <div data-category-detail="glass">
             <label for="csr_glass_waste_weight">Glass Waste (lbs):</label>
             <input type="number" id="csr_glass_waste_weight" name="csr_glass_waste_weight" step="0.01">
             <fieldset class="collapsible">
@@ -375,7 +446,7 @@
                 </div>
             </fieldset>
         </div>
-        <div>
+        <div data-category-detail="cigarette">
             <label for="csr_cigarette_litter_weight">Cigarette Litter (lbs):</label>
             <input type="number" id="csr_cigarette_litter_weight" name="csr_cigarette_litter_weight" step="0.01">
             <fieldset class="collapsible">
@@ -404,7 +475,7 @@
                 </div>
             </fieldset>
         </div>
-        <div>
+        <div data-category-detail="textiles">
             <label for="csr_textiles_weight">Textiles (lbs):</label>
             <input type="number" id="csr_textiles_weight" name="csr_textiles_weight" step="0.01">
             <fieldset class="collapsible">
@@ -457,7 +528,7 @@
                 </div>
             </fieldset>
         </div>
-        <div>
+        <div data-category-detail="medical">
             <label for="csr_medical_waste_weight">Medical Waste (lbs):</label>
             <input type="number" id="csr_medical_waste_weight" name="csr_medical_waste_weight" step="0.01">
             <fieldset class="collapsible">
@@ -502,7 +573,7 @@
                 </div>
             </fieldset>
         </div>
-        <div>
+        <div data-category-detail="sanitary">
             <label for="csr_sanitary_products_weight">Sanitary Products (lbs):</label>
             <input type="number" id="csr_sanitary_products_weight" name="csr_sanitary_products_weight" step="0.01">
             <fieldset class="collapsible">
@@ -539,7 +610,7 @@
                 </div>
             </fieldset>
         </div>
-        <div>
+        <div data-category-detail="fishing">
             <label for="csr_fishing_gear_weight">Fishing Gear (lbs):</label>
             <input type="number" id="csr_fishing_gear_weight" name="csr_fishing_gear_weight" step="0.01">
             <fieldset class="collapsible">
@@ -584,7 +655,7 @@
                 </div>
             </fieldset>
         </div>
-        <div>
+        <div data-category-detail="styrofoam_hazardous">
             <label for="csr_styrofoam_hazardous_waste_weight">Styrofoam & Hazardous Waste (lbs):</label>
             <input type="number" id="csr_styrofoam_hazardous_waste_weight" name="csr_styrofoam_hazardous_waste_weight" step="0.01">
             <fieldset class="collapsible">
@@ -650,7 +721,7 @@
                 </div>
             </fieldset>
         </div>
-        <div>
+        <div data-category-detail="miscellaneous">
             <label for="csr_miscellaneous_weight">Miscellaneous (lbs):</label>
             <input type="number" id="csr_miscellaneous_weight" name="csr_miscellaneous_weight" step="0.01">
             <fieldset class="collapsible">
@@ -683,7 +754,7 @@
                 </div>
             </fieldset>
         </div>
-        <div>
+        <div data-category-detail="derelict">
             <label for="csr_derelict_items_weight">Derelict Items (lbs):</label>
             <input type="number" id="csr_derelict_items_weight" name="csr_derelict_items_weight" step="0.01">
             <fieldset class="collapsible">

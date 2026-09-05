@@ -2,7 +2,7 @@
 /*
 Plugin Name: EcoServants CSR
 Description: A plugin for environmental volunteers to submit Community Site Reports (CSR) after cleanup events.
-Version: 1.1.7-guided-interim
+Version: 1.2.0
 By: EcoServants - Thanks to our developers
 Author URI: https://ecoservantsproject.org
 */
@@ -10,6 +10,10 @@ Author URI: https://ecoservantsproject.org
 // Exit if accessed directly
 if (!defined('ABSPATH')) {
     exit;
+}
+
+if (!defined('ECOSERVANTS_CSR_VERSION')) {
+    define('ECOSERVANTS_CSR_VERSION', '1.2.0');
 }
 
 // Register custom post type for CSR Reports with locked-down capabilities
@@ -326,15 +330,136 @@ add_action('init', function () {
     wp_send_json(['items' => $items]);
 });
 
+/**
+ * Helper function to retrieve standardized SVG icon markup for a CSR category.
+ *
+ * @param string $category_key Category key or alias (e.g. 'plastic', 'plastic_waste', 'styrofoam_hazardous', etc.)
+ * @param array  $args         Optional settings: 'class', 'size', 'aria_hidden', 'alt'
+ * @return string SVG HTML markup
+ */
+function csr_get_category_icon_svg( $category_key, $args = [] ) {
+    static $svg_cache = [];
+
+    $key_map = [
+        'unsorted_litter'           => 'unsorted-litter',
+        'unsorted'                  => 'unsorted-litter',
+        'plastic'                   => 'plastic',
+        'plastic_waste'             => 'plastic',
+        'paper'                     => 'paper',
+        'paper_waste'               => 'paper',
+        'food'                      => 'food',
+        'food_waste'                => 'food',
+        'metal'                     => 'metal',
+        'metal_waste'               => 'metal',
+        'glass'                     => 'glass',
+        'glass_waste'               => 'glass',
+        'cigarette'                 => 'cigarette',
+        'cigarette_litter'          => 'cigarette',
+        'textiles'                  => 'textiles',
+        'medical'                   => 'medical',
+        'medical_waste'             => 'medical',
+        'sanitary'                  => 'sanitary',
+        'sanitary_products'         => 'sanitary',
+        'fishing'                   => 'fishing',
+        'fishing_gear'              => 'fishing',
+        'styrofoam_hazardous'       => 'styrofoam-hazardous',
+        'styrofoam_hazardous_waste' => 'styrofoam-hazardous',
+        'miscellaneous'             => 'miscellaneous',
+        'derelict'                  => 'derelict',
+        'derelict_items'            => 'derelict',
+        'invasive'                  => 'invasive-species',
+        'invasive_species'          => 'invasive-species',
+        'invasive_species_removed'  => 'invasive-species',
+        'invasive_species_weight'   => 'invasive-species',
+        'invasive-species'          => 'invasive-species',
+    ];
+
+    $slug = isset($key_map[$category_key]) ? $key_map[$category_key] : sanitize_title($category_key);
+    $icon_path = plugin_dir_path(__FILE__) . 'assets/icons/' . $slug . '.svg';
+
+    if (!isset($svg_cache[$slug])) {
+        if (file_exists($icon_path)) {
+            $svg_cache[$slug] = file_get_contents($icon_path);
+        } else {
+            $svg_cache[$slug] = '';
+        }
+    }
+
+    $svg = $svg_cache[$slug];
+
+    if (empty($svg)) {
+        return '';
+    }
+
+    $class       = isset($args['class']) ? esc_attr($args['class']) : 'csr-category-icon-svg';
+    $size        = isset($args['size']) ? (int) $args['size'] : 0;
+    $aria_hidden = isset($args['aria_hidden']) ? (bool) $args['aria_hidden'] : true;
+    $alt         = isset($args['alt']) ? esc_attr($args['alt']) : '';
+
+    if ($class !== 'csr-category-icon-svg') {
+        $svg = preg_replace('/class="[^"]*"/', '', $svg);
+        $svg = str_replace('<svg ', '<svg class="' . $class . '" ', $svg);
+    } else {
+        $svg = str_replace('<svg ', '<svg class="csr-category-icon-svg" ', $svg);
+    }
+
+    if ($size > 0) {
+        $svg = preg_replace('/width="[^"]*"/', 'width="' . $size . '"', $svg);
+        $svg = preg_replace('/height="[^"]*"/', 'height="' . $size . '"', $svg);
+    }
+
+    if ($aria_hidden) {
+        $svg = str_replace('<svg ', '<svg aria-hidden="true" role="img" ', $svg);
+    } else if ($alt !== '') {
+        $svg = str_replace('<svg ', '<svg role="img" aria-label="' . $alt . '" ', $svg);
+    }
+
+    return $svg;
+}
+
+/**
+ * Helper function to return all major category icon SVGs mapped by key.
+ *
+ * @return array
+ */
+function csr_get_all_category_icons() {
+    $categories = [
+        'unsorted_litter', 'plastic', 'paper', 'food', 'metal', 'glass',
+        'cigarette', 'textiles', 'medical', 'sanitary', 'fishing',
+        'styrofoam_hazardous', 'miscellaneous', 'derelict', 'invasive_species'
+    ];
+    $icons = [];
+    foreach ($categories as $cat) {
+        $icons[$cat] = csr_get_category_icon_svg($cat);
+    }
+    return $icons;
+}
+
 // Enqueue scripts and styles
 function ecoservants_enqueue_scripts() {
-    $version = '1.1.4-new-report-reset';
+    $version = defined('ECOSERVANTS_CSR_VERSION') ? ECOSERVANTS_CSR_VERSION : '1.1.8-category-icons';
     wp_enqueue_style('ecoservants-style', plugin_dir_url(__FILE__) . 'assets/css/style.css', array(), $version);
     wp_enqueue_script('ecoservants-carousel', plugin_dir_url(__FILE__) . 'assets/js/carousel.js', array(), $version, true);
     wp_enqueue_script('csr-guided-wrapper', plugin_dir_url(__FILE__) . 'assets/js/csr-guided-wrapper.js', array(), $version, true);
+    wp_enqueue_script('csr-category-cards', plugin_dir_url(__FILE__) . 'assets/js/csr-category-cards.js', array(), $version, true);
     wp_enqueue_script('csr-wall-modal', plugin_dir_url(__FILE__) . 'assets/js/csr-wall-modal.js', array(), $version, true);
 }
 add_action('wp_enqueue_scripts', 'ecoservants_enqueue_scripts');
+
+// Enqueue admin styles, icon assets, and review console stylesheet
+function ecoservants_admin_enqueue_scripts($hook) {
+    global $post_type;
+    $is_csr_report = ($post_type === 'csr_report');
+    $page = isset($_GET['page']) ? sanitize_key($_GET['page']) : '';
+    $is_csr_page = ($page && (strpos($page, 'csr') !== false || in_array($page, ['total-impact-metrics', 'csr-yearly-export'], true)));
+
+    if ($is_csr_report || $is_csr_page) {
+        $version = defined('ECOSERVANTS_CSR_VERSION') ? ECOSERVANTS_CSR_VERSION : '1.2.0';
+        wp_enqueue_style('ecoservants-admin-style', plugin_dir_url(__FILE__) . 'assets/css/style.css', array(), $version);
+        wp_enqueue_style('ecoservants-admin-review-css', plugin_dir_url(__FILE__) . 'assets/css/admin-review.css', array('ecoservants-admin-style'), $version);
+    }
+}
+add_action('admin_enqueue_scripts', 'ecoservants_admin_enqueue_scripts');
 
 // Include form template and handler
 include plugin_dir_path(__FILE__) . 'form-handler.php';
@@ -344,6 +469,7 @@ include plugin_dir_path(__FILE__) . 'csr-impact-summary.php';
 
 // Register shortcode for the form
 function ecoservants_csr_form_shortcode() {
+    if (function_exists('ecoservants_enqueue_scripts')) { ecoservants_enqueue_scripts(); }
     $submitted = isset($_GET['submitted']) && sanitize_text_field(wp_unslash($_GET['submitted'])) === 'true';
     $report_id = isset($_GET['csr_report_id']) ? absint($_GET['csr_report_id']) : 0;
 
@@ -404,6 +530,7 @@ add_shortcode('csr_form', 'ecoservants_csr_form_shortcode');
 
 // Register shortcode for the Wall of Fame
 function ecoservants_wall_of_fame_shortcode($atts = []) {
+    if (function_exists('ecoservants_enqueue_scripts')) { ecoservants_enqueue_scripts(); }
     $atts = shortcode_atts(
         [
             'limit' => 50,
@@ -579,11 +706,24 @@ add_action('init', 'ecoservants_wall_of_fame_iframe_endpoint');
 // Add a custom endpoint for the CSR form iframe
 function ecoservants_csr_form_iframe_endpoint() {
     if (isset($_GET['csr_form_iframe'])) {
-        header('Content-Type: text/html');
+        $version = defined('ECOSERVANTS_CSR_VERSION') ? ECOSERVANTS_CSR_VERSION : '1.1.8-category-icons';
+        $css_url = plugin_dir_url(__FILE__) . 'assets/css/style.css?v=' . urlencode($version);
+        $carousel_url = plugin_dir_url(__FILE__) . 'assets/js/carousel.js?v=' . urlencode($version);
+        $wrapper_url = plugin_dir_url(__FILE__) . 'assets/js/csr-guided-wrapper.js?v=' . urlencode($version);
+        $cards_url = plugin_dir_url(__FILE__) . 'assets/js/csr-category-cards.js?v=' . urlencode($version);
+        $modal_url = plugin_dir_url(__FILE__) . 'assets/js/csr-wall-modal.js?v=' . urlencode($version);
+
+        header('Content-Type: text/html; charset=' . get_option('blog_charset', 'UTF-8'));
         echo '<!DOCTYPE html><html><head>';
-        echo '<link rel="stylesheet" href="' . plugin_dir_url(__FILE__) . 'assets/css/style.css">';
+        echo '<meta charset="' . esc_attr(get_option('blog_charset', 'UTF-8')) . '">';
+        echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
+        echo '<link rel="stylesheet" href="' . esc_url($css_url) . '">';
         echo '</head><body>';
         echo do_shortcode('[csr_form]');
+        echo '<script src="' . esc_url($carousel_url) . '"></script>';
+        echo '<script src="' . esc_url($wrapper_url) . '"></script>';
+        echo '<script src="' . esc_url($cards_url) . '"></script>';
+        echo '<script src="' . esc_url($modal_url) . '"></script>';
         echo '</body></html>';
         exit;
     }
@@ -669,83 +809,328 @@ function ecoservants_top_impact_iframe_endpoint() {
 }
 add_action('init', 'ecoservants_top_impact_iframe_endpoint');
 
+// Calculate total waste weight (lbs) for a single CSR report post
+function ecoservants_get_post_total_weight($post_id) {
+    $weight_keys = [
+        'csr_plastic_waste_weight',
+        'csr_paper_waste_weight',
+        'csr_metal_waste_weight',
+        'csr_glass_waste_weight',
+        'csr_food_waste_weight',
+        'csr_cigarette_litter_weight',
+        'csr_textiles_weight',
+        'csr_medical_waste_weight',
+        'csr_sanitary_products_weight',
+        'csr_fishing_gear_weight',
+        'csr_styrofoam_hazardous_waste_weight',
+        'csr_miscellaneous_weight',
+        'csr_derelict_items_weight',
+        'csr_unsorted_litter_weight',
+    ];
+    $total = 0.0;
+    foreach ($weight_keys as $key) {
+        $val = get_post_meta($post_id, $key, true);
+        if (is_numeric($val)) {
+            $total += (float) $val;
+        }
+    }
+    return $total;
+}
+
+// Data Quality & Audit Evaluation Helper
+function ecoservants_audit_csr_report($post_id) {
+    $issues = [];
+    $name = (string) get_post_meta($post_id, 'csr_name', true);
+    $email = (string) get_post_meta($post_id, 'csr_email', true);
+    $date = (string) get_post_meta($post_id, 'csr_date', true);
+    $location = (string) get_post_meta($post_id, 'csr_location', true);
+    $reporter_type = (string) get_post_meta($post_id, 'csr_reporter_type', true);
+    $organization = (string) get_post_meta($post_id, 'csr_organization_name', true);
+    $team = (string) get_post_meta($post_id, 'csr_team_name', true);
+    $volunteers = (int) get_post_meta($post_id, 'csr_volunteers_involved', true);
+    $photos = (string) get_post_meta($post_id, 'csr_photos', true);
+    $photos_count = $photos ? count(array_filter(array_map('trim', explode(',', $photos)))) : 0;
+    $total_weight = ecoservants_get_post_total_weight($post_id);
+
+    // Missing basic info
+    if (empty($name)) {
+        $issues[] = ['type' => 'warning', 'message' => 'Missing reporter name'];
+    }
+    if (empty($email)) {
+        $issues[] = ['type' => 'warning', 'message' => 'Missing reporter email'];
+    }
+    if (empty($location)) {
+        $issues[] = ['type' => 'warning', 'message' => 'Missing cleanup location'];
+    }
+    if (empty($date)) {
+        $issues[] = ['type' => 'warning', 'message' => 'Missing report date'];
+    }
+
+    // Entity naming check
+    if ($reporter_type === 'organization' && empty($organization)) {
+        $issues[] = ['type' => 'warning', 'message' => 'Organization report missing organization name'];
+    }
+    if ($reporter_type === 'team' && empty($team)) {
+        $issues[] = ['type' => 'warning', 'message' => 'Team report missing team name'];
+    }
+
+    // High threshold anomaly checks
+    if ($total_weight > 500) {
+        $issues[] = ['type' => 'info', 'message' => 'High reported total weight (' . number_format($total_weight, 1) . ' lbs)'];
+    }
+    if ($volunteers > 100) {
+        $issues[] = ['type' => 'info', 'message' => 'Large volunteer count (' . $volunteers . ' volunteers)'];
+    }
+
+    // Photo check
+    if (($total_weight > 50 || $volunteers > 5) && $photos_count === 0) {
+        $issues[] = ['type' => 'info', 'message' => 'No photos attached for large report (>50 lbs or >5 volunteers)'];
+    }
+
+    return $issues;
+}
+
+// Admin List Table Columns for CSR Reports
+function ecoservants_csr_report_columns($columns) {
+    $new_columns = [];
+    $new_columns['cb']                  = $columns['cb'] ?? '<input type="checkbox" />';
+    $new_columns['title']               = __('Report Title', 'ecoservants-csr');
+    $new_columns['csr_reporter_entity'] = __('Reporter & Entity', 'ecoservants-csr');
+    $new_columns['csr_event_ref']       = __('Event & Reference', 'ecoservants-csr');
+    $new_columns['csr_location_date']   = __('Location & Date', 'ecoservants-csr');
+    $new_columns['csr_total_weight']    = __('Total Weight (lbs)', 'ecoservants-csr');
+    $new_columns['csr_volunteers']      = __('Volunteers', 'ecoservants-csr');
+    $new_columns['csr_photos_count']    = __('Photos', 'ecoservants-csr');
+    $new_columns['csr_quality_audit']   = __('Quality Audit', 'ecoservants-csr');
+    return $new_columns;
+}
+add_filter('manage_csr_report_posts_columns', 'ecoservants_csr_report_columns');
+
+// Render Custom Admin Column Content
+function ecoservants_csr_report_custom_column($column, $post_id) {
+    switch ($column) {
+        case 'csr_reporter_entity':
+            $name          = (string) get_post_meta($post_id, 'csr_name', true);
+            $email         = (string) get_post_meta($post_id, 'csr_email', true);
+            $type          = (string) get_post_meta($post_id, 'csr_reporter_type', true) ?: 'individual';
+            $org           = (string) get_post_meta($post_id, 'csr_organization_name', true);
+            $team          = (string) get_post_meta($post_id, 'csr_team_name', true);
+
+            echo '<strong>' . esc_html($name ?: '—') . '</strong>';
+            if ($email) {
+                echo '<br><span style="color:#64748b; font-size:12px;">' . esc_html($email) . '</span>';
+            }
+            echo '<br><span class="csr-admin-badge csr-badge-' . esc_attr($type) . '">' . esc_html(ucfirst($type)) . '</span>';
+            if ($type === 'organization' && $org) {
+                echo ' <span style="font-size:11px; color:#334155;">(' . esc_html($org) . ')</span>';
+            } elseif ($type === 'team' && $team) {
+                echo ' <span style="font-size:11px; color:#334155;">(' . esc_html($team) . ')</span>';
+            }
+            break;
+
+        case 'csr_event_ref':
+            $event = (string) get_post_meta($post_id, 'csr_event_name', true);
+            $ref   = (string) get_post_meta($post_id, 'csr_internal_reference', true);
+            if ($event) {
+                echo '<strong>' . esc_html($event) . '</strong>';
+            }
+            if ($ref) {
+                echo ($event ? '<br>' : '') . '<code style="font-size:11px;">Ref: ' . esc_html($ref) . '</code>';
+            }
+            if (!$event && !$ref) {
+                echo '—';
+            }
+            break;
+
+        case 'csr_location_date':
+            $location = (string) get_post_meta($post_id, 'csr_location', true);
+            $date     = (string) get_post_meta($post_id, 'csr_date', true);
+            echo esc_html($location ?: '—');
+            if ($date) {
+                echo '<br><span style="color:#64748b; font-size:12px;">' . esc_html($date) . '</span>';
+            }
+            break;
+
+        case 'csr_total_weight':
+            $weight = ecoservants_get_post_total_weight($post_id);
+            echo '<strong>' . esc_html(number_format($weight, 1)) . ' lbs</strong>';
+            break;
+
+        case 'csr_volunteers':
+            $volunteers = (int) get_post_meta($post_id, 'csr_volunteers_involved', true);
+            echo esc_html($volunteers > 0 ? $volunteers : '—');
+            break;
+
+        case 'csr_photos_count':
+            $photos = (string) get_post_meta($post_id, 'csr_photos', true);
+            $count  = $photos ? count(array_filter(array_map('trim', explode(',', $photos)))) : 0;
+            if ($count > 0) {
+                echo '📷 <strong>' . esc_html($count) . '</strong>';
+            } else {
+                echo '<span style="color:#94a3b8;">0</span>';
+            }
+            break;
+
+        case 'csr_quality_audit':
+            $audit = ecoservants_audit_csr_report($post_id);
+            if (empty($audit)) {
+                echo '<span class="csr-audit-badge audit-clean">✔ Verified</span>';
+            } else {
+                $has_warning = false;
+                foreach ($audit as $item) {
+                    if ($item['type'] === 'warning') {
+                        $has_warning = true;
+                        break;
+                    }
+                }
+                if ($has_warning) {
+                    echo '<span class="csr-audit-badge audit-warning" title="' . esc_attr(implode(' | ', array_column($audit, 'message'))) . '">⚠️ Notes (' . count($audit) . ')</span>';
+                } else {
+                    echo '<span class="csr-audit-badge audit-info" title="' . esc_attr(implode(' | ', array_column($audit, 'message'))) . '">ℹ️ Info (' . count($audit) . ')</span>';
+                }
+            }
+            break;
+    }
+}
+add_action('manage_csr_report_posts_custom_column', 'ecoservants_csr_report_custom_column', 10, 2);
+
+// Make Admin Columns Sortable
+function ecoservants_csr_report_sortable_columns($columns) {
+    $columns['csr_location_date'] = 'csr_date';
+    $columns['csr_volunteers']    = 'csr_volunteers';
+    return $columns;
+}
+add_filter('manage_edit-csr_report_sortable_columns', 'ecoservants_csr_report_sortable_columns');
+
+// Filter by Reporter Type in List View
+function ecoservants_csr_report_admin_filters($post_type) {
+    if ($post_type !== 'csr_report') {
+        return;
+    }
+    $current = isset($_GET['csr_reporter_type_filter']) ? sanitize_key($_GET['csr_reporter_type_filter']) : '';
+    ?>
+    <select name="csr_reporter_type_filter">
+        <option value=""><?php esc_html_e('All Reporter Types', 'ecoservants-csr'); ?></option>
+        <option value="individual" <?php selected($current, 'individual'); ?>><?php esc_html_e('Individual', 'ecoservants-csr'); ?></option>
+        <option value="team" <?php selected($current, 'team'); ?>><?php esc_html_e('Team', 'ecoservants-csr'); ?></option>
+        <option value="organization" <?php selected($current, 'organization'); ?>><?php esc_html_e('Organization', 'ecoservants-csr'); ?></option>
+    </select>
+    <?php
+}
+add_action('restrict_manage_posts', 'ecoservants_csr_report_admin_filters');
+
+// Filter and Sort Query callback for CSR reports list view
+function ecoservants_csr_report_filter_query($query) {
+    global $pagenow;
+    if (is_admin() && $pagenow === 'edit.php' && isset($_GET['post_type']) && $_GET['post_type'] === 'csr_report') {
+        if (!empty($_GET['csr_reporter_type_filter'])) {
+            $filter_type = sanitize_key($_GET['csr_reporter_type_filter']);
+            $meta_query  = $query->get('meta_query');
+            $meta_query  = is_array($meta_query) ? $meta_query : [];
+            $meta_query[] = [
+                'key'     => 'csr_reporter_type',
+                'value'   => $filter_type,
+                'compare' => '=',
+            ];
+            $query->set('meta_query', $meta_query);
+        }
+
+        // Handle sortable column orderby mappings
+        $orderby = $query->get('orderby');
+        if ($orderby === 'csr_date') {
+            $query->set('meta_key', 'csr_date');
+            $query->set('orderby', 'meta_value');
+        } elseif ($orderby === 'csr_volunteers') {
+            $query->set('meta_key', 'csr_volunteers_involved');
+            $query->set('orderby', 'meta_value_num');
+        }
+    }
+}
+add_action('pre_get_posts', 'ecoservants_csr_report_filter_query');
+
 // Register meta boxes for CSR Reports
 function ecoservants_register_meta_boxes() {
-    add_meta_box('csr_report_details', 'CSR Report Details', 'ecoservants_display_meta_boxes', 'csr_report', 'normal', 'high');
+    add_meta_box('csr_report_details', 'CSR Report Details & Review Console', 'ecoservants_display_meta_boxes', 'csr_report', 'normal', 'high');
 }
 add_action('add_meta_boxes', 'ecoservants_register_meta_boxes');
+
 // Register CSR meta with show_in_rest=false globally (covers REST-only contexts too)
 add_action('init', function () {
     $meta_keys = [
-    // Core identity
-    'csr_name',
-    'csr_email',
-    'csr_date',
-    'csr_location',
-    'csr_notes',
-    'csr_photos',
+        // Core identity & metadata
+        'csr_name',
+        'csr_email',
+        'csr_date',
+        'csr_location',
+        'csr_reporter_type',
+        'csr_organization_name',
+        'csr_team_name',
+        'csr_event_name',
+        'csr_internal_reference',
+        'csr_notes',
+        'csr_photos',
 
-    // Weights
-    'csr_plastic_waste_weight',
-    'csr_paper_waste_weight',
-    'csr_metal_waste_weight',
-    'csr_glass_waste_weight',
-    'csr_food_waste_weight',
-    'csr_cigarette_litter_weight',
-    'csr_textiles_weight',
-    'csr_medical_waste_weight',
-    'csr_sanitary_products_weight',
-    'csr_fishing_gear_weight',
-    'csr_styrofoam_hazardous_waste_weight',
-    'csr_miscellaneous_weight',
-    'csr_derelict_items_weight',
-    'csr_unsorted_litter_weight',
-    'csr_invasive_species_weight',
+        // Weights
+        'csr_plastic_waste_weight',
+        'csr_paper_waste_weight',
+        'csr_metal_waste_weight',
+        'csr_glass_waste_weight',
+        'csr_food_waste_weight',
+        'csr_cigarette_litter_weight',
+        'csr_textiles_weight',
+        'csr_medical_waste_weight',
+        'csr_sanitary_products_weight',
+        'csr_fishing_gear_weight',
+        'csr_styrofoam_hazardous_waste_weight',
+        'csr_miscellaneous_weight',
+        'csr_derelict_items_weight',
+        'csr_unsorted_litter_weight',
+        'csr_invasive_species_weight',
 
-    // Habitat / extras
-    'csr_trees_planted',
-    'csr_invasive_species_removed',
-    'csr_invasive_species_names',
-    'csr_volunteers_involved',
-    'csr_native_plants_seeded',
-    'csr_native_plants_seeded_other',
-    'csr_erosion_control_methods',
-    'csr_erosion_control_notes',
+        // Habitat / extras
+        'csr_trees_planted',
+        'csr_invasive_species_removed',
+        'csr_invasive_species_names',
+        'csr_volunteers_involved',
+        'csr_native_plants_seeded',
+        'csr_native_plants_seeded_other',
+        'csr_erosion_control_methods',
+        'csr_erosion_control_notes',
 
-    // Subcategories
-    'csr_plastic_subcategories',
-    'csr_paper_subcategories',
-    'csr_metal_subcategories',
-    'csr_glass_subcategories',
-    'csr_food_subcategories',
-    'csr_cigarette_subcategories',
-    'csr_textiles_subcategories',
-    'csr_medical_subcategories',
-    'csr_sanitary_subcategories',
-    'csr_fishing_subcategories',
-    'csr_styrofoam_subcategories',
-    'csr_hazardous_subcategories',
-    'csr_miscellaneous_subcategories',
-    'csr_derelict_subcategories',
-    'csr_unsorted_litter_subcategories',
+        // Subcategories
+        'csr_plastic_subcategories',
+        'csr_paper_subcategories',
+        'csr_metal_subcategories',
+        'csr_glass_subcategories',
+        'csr_food_subcategories',
+        'csr_cigarette_subcategories',
+        'csr_textiles_subcategories',
+        'csr_medical_subcategories',
+        'csr_sanitary_subcategories',
+        'csr_fishing_subcategories',
+        'csr_styrofoam_subcategories',
+        'csr_hazardous_subcategories',
+        'csr_miscellaneous_subcategories',
+        'csr_derelict_subcategories',
+        'csr_unsorted_litter_subcategories',
 
-    // Subcategory counts (JSON)
-    'csr_plastic_subcategories_count',
-    'csr_paper_subcategories_count',
-    'csr_food_subcategories_count',
-    'csr_metal_subcategories_count',
-    'csr_glass_subcategories_count',
-    'csr_cigarette_subcategories_count',
-    'csr_textiles_subcategories_count',
-    'csr_medical_subcategories_count',
-    'csr_sanitary_subcategories_count',
-    'csr_fishing_subcategories_count',
-    'csr_styrofoam_subcategories_count',
-    'csr_hazardous_subcategories_count',
-    'csr_miscellaneous_subcategories_count',
-    'csr_derelict_subcategories_count',
-    'csr_unsorted_litter_subcategories_count',
-];
+        // Subcategory counts (JSON)
+        'csr_plastic_subcategories_count',
+        'csr_paper_subcategories_count',
+        'csr_food_subcategories_count',
+        'csr_metal_subcategories_count',
+        'csr_glass_subcategories_count',
+        'csr_cigarette_subcategories_count',
+        'csr_textiles_subcategories_count',
+        'csr_medical_subcategories_count',
+        'csr_sanitary_subcategories_count',
+        'csr_fishing_subcategories_count',
+        'csr_styrofoam_subcategories_count',
+        'csr_hazardous_subcategories_count',
+        'csr_miscellaneous_subcategories_count',
+        'csr_derelict_subcategories_count',
+        'csr_unsorted_litter_subcategories_count',
+    ];
 
     foreach ($meta_keys as $key) {
         register_meta('post', $key, [
@@ -756,14 +1141,19 @@ add_action('init', function () {
     }
 });
 
-// Display meta boxes
+// Revamped Display Meta Boxes — CSR Admin Review & Management Console
 function ecoservants_display_meta_boxes($post) {
-    // Required fields
-    $name     = (string) get_post_meta($post->ID, 'csr_name', true);
-    $email    = (string) get_post_meta($post->ID, 'csr_email', true);
-    $date     = (string) get_post_meta($post->ID, 'csr_date', true);
-    $location = (string) get_post_meta($post->ID, 'csr_location', true);
-    $notes    = (string) get_post_meta($post->ID, 'csr_notes', true);
+    // Identity & Entity Info
+    $name          = (string) get_post_meta($post->ID, 'csr_name', true);
+    $email         = (string) get_post_meta($post->ID, 'csr_email', true);
+    $date          = (string) get_post_meta($post->ID, 'csr_date', true);
+    $location      = (string) get_post_meta($post->ID, 'csr_location', true);
+    $reporter_type = (string) get_post_meta($post->ID, 'csr_reporter_type', true) ?: 'individual';
+    $org_name      = (string) get_post_meta($post->ID, 'csr_organization_name', true);
+    $team_name     = (string) get_post_meta($post->ID, 'csr_team_name', true);
+    $event_name    = (string) get_post_meta($post->ID, 'csr_event_name', true);
+    $internal_ref  = (string) get_post_meta($post->ID, 'csr_internal_reference', true);
+    $notes         = (string) get_post_meta($post->ID, 'csr_notes', true);
 
     // Media
     $photos       = (string) get_post_meta($post->ID, 'csr_photos', true);
@@ -782,6 +1172,10 @@ function ecoservants_display_meta_boxes($post) {
     $erosion_control_methods = (string) get_post_meta($post->ID, 'csr_erosion_control_methods', true);
     $erosion_control_notes   = (string) get_post_meta($post->ID, 'csr_erosion_control_notes', true);
 
+    // Calculated metrics
+    $total_weight  = ecoservants_get_post_total_weight($post->ID);
+    $audit_issues  = ecoservants_audit_csr_report($post->ID);
+
     // Unsorted litter
     $unsorted_litter_weight = (string) get_post_meta($post->ID, 'csr_unsorted_litter_weight', true);
     $unsorted_litter_subcategories = (string) get_post_meta($post->ID, 'csr_unsorted_litter_subcategories', true);
@@ -796,7 +1190,7 @@ function ecoservants_display_meta_boxes($post) {
         $unsorted_litter_subcategories_count = [];
     }
 
-    // Build a map of counts keyed by the meta key that stores JSON
+    // Build subcategory counts map
     $counts_map = [
         'csr_plastic_subcategories_count'       => json_decode((string) get_post_meta($post->ID, 'csr_plastic_subcategories_count', true), true),
         'csr_paper_subcategories_count'         => json_decode((string) get_post_meta($post->ID, 'csr_paper_subcategories_count', true), true),
@@ -819,12 +1213,11 @@ function ecoservants_display_meta_boxes($post) {
         }
     }
 
-    // Waste categories and subcategories
+    // Category definitions
     $categories = [
         'plastic' => [
             'label'                 => 'Plastic Waste',
             'weight_meta'           => 'csr_plastic_waste_weight',
-            'items_meta'            => 'csr_plastic_waste_items',
             'subcategories_meta'    => 'csr_plastic_subcategories',
             'subcategories_count_meta' => 'csr_plastic_subcategories_count',
             'subcategories'         => [
@@ -836,7 +1229,6 @@ function ecoservants_display_meta_boxes($post) {
         'paper' => [
             'label'                 => 'Paper Waste',
             'weight_meta'           => 'csr_paper_waste_weight',
-            'items_meta'            => 'csr_paper_waste_items',
             'subcategories_meta'    => 'csr_paper_subcategories',
             'subcategories_count_meta' => 'csr_paper_subcategories_count',
             'subcategories'         => [
@@ -877,7 +1269,6 @@ function ecoservants_display_meta_boxes($post) {
         'cigarette' => [
             'label'                 => 'Cigarette Litter',
             'weight_meta'           => 'csr_cigarette_litter_weight',
-            'items_meta'            => 'csr_cigarette_litter_items',
             'subcategories_meta'    => 'csr_cigarette_subcategories',
             'subcategories_count_meta' => 'csr_cigarette_subcategories_count',
             'subcategories'         => [
@@ -887,7 +1278,6 @@ function ecoservants_display_meta_boxes($post) {
         'textiles' => [
             'label'                 => 'Textiles',
             'weight_meta'           => 'csr_textiles_weight',
-            'items_meta'            => 'csr_textiles_items',
             'subcategories_meta'    => 'csr_textiles_subcategories',
             'subcategories_count_meta' => 'csr_textiles_subcategories_count',
             'subcategories'         => [
@@ -897,7 +1287,6 @@ function ecoservants_display_meta_boxes($post) {
         'medical' => [
             'label'                 => 'Medical Waste',
             'weight_meta'           => 'csr_medical_waste_weight',
-            'items_meta'            => 'csr_medical_waste_items',
             'subcategories_meta'    => 'csr_medical_subcategories',
             'subcategories_count_meta' => 'csr_medical_subcategories_count',
             'subcategories'         => [
@@ -908,7 +1297,6 @@ function ecoservants_display_meta_boxes($post) {
         'sanitary' => [
             'label'                 => 'Sanitary Products',
             'weight_meta'           => 'csr_sanitary_products_weight',
-            'items_meta'            => 'csr_sanitary_products_items',
             'subcategories_meta'    => 'csr_sanitary_subcategories',
             'subcategories_count_meta' => 'csr_sanitary_subcategories_count',
             'subcategories'         => [
@@ -918,7 +1306,6 @@ function ecoservants_display_meta_boxes($post) {
         'fishing' => [
             'label'                 => 'Fishing Gear',
             'weight_meta'           => 'csr_fishing_gear_weight',
-            'items_meta'            => 'csr_fishing_gear_items',
             'subcategories_meta'    => 'csr_fishing_subcategories',
             'subcategories_count_meta' => 'csr_fishing_subcategories_count',
             'subcategories'         => [
@@ -929,7 +1316,6 @@ function ecoservants_display_meta_boxes($post) {
         'styrofoam_hazardous' => [
             'label'                 => 'Styrofoam & Hazardous Waste',
             'weight_meta'           => 'csr_styrofoam_hazardous_waste_weight',
-            'items_meta'            => 'csr_styrofoam_hazardous_waste_items',
             'subcategories_meta'    => 'csr_styrofoam_subcategories',
             'subcategories_count_meta' => 'csr_styrofoam_subcategories_count',
             'subcategories'         => [
@@ -944,7 +1330,6 @@ function ecoservants_display_meta_boxes($post) {
         'miscellaneous' => [
             'label'                 => 'Miscellaneous',
             'weight_meta'           => 'csr_miscellaneous_weight',
-            'items_meta'            => 'csr_miscellaneous_items',
             'subcategories_meta'    => 'csr_miscellaneous_subcategories',
             'subcategories_count_meta' => 'csr_miscellaneous_subcategories_count',
             'subcategories'         => [
@@ -954,7 +1339,6 @@ function ecoservants_display_meta_boxes($post) {
         'derelict' => [
             'label'                 => 'Derelict Items',
             'weight_meta'           => 'csr_derelict_items_weight',
-            'items_meta'            => 'csr_derelict_items_items',
             'subcategories_meta'    => 'csr_derelict_subcategories',
             'subcategories_count_meta' => 'csr_derelict_subcategories_count',
             'subcategories'         => [
@@ -965,172 +1349,399 @@ function ecoservants_display_meta_boxes($post) {
     ];
 
     wp_nonce_field('csr_report_details_nonce', 'csr_report_details_nonce_field');
-
-    // Render fields
     ?>
-    <p>
-        <label for="csr_name">Name:</label>
-        <input type="text" id="csr_name" name="csr_name" value="<?php echo esc_attr($name); ?>" required>
-    </p>
-    <p>
-        <label for="csr_email">Email:</label>
-        <input type="email" id="csr_email" name="csr_email" value="<?php echo esc_attr($email); ?>" required>
-    </p>
-    <p>
-        <label for="csr_date">Date:</label>
-        <input type="date" id="csr_date" name="csr_date" value="<?php echo esc_attr($date); ?>" required>
-    </p>
-    <p>
-        <label for="csr_location">Location:</label>
-        <input type="text" id="csr_location" name="csr_location" value="<?php echo esc_attr($location); ?>" required>
-    </p>
-    <p>
-        <label for="csr_unsorted_litter_weight">Unsorted Litter (lbs):</label>
-        <input type="number" id="csr_unsorted_litter_weight" name="csr_unsorted_litter_weight" value="<?php echo esc_attr($unsorted_litter_weight); ?>" step="0.01" min="0">
-        <fieldset>
-            <legend>Unsorted Litter Subcategories:</legend>
-            <label>
-                <input type="checkbox" name="csr_unsorted_litter_subcategories[]" value="Number of Unsorted Bags Collected" <?php echo in_array('Number of Unsorted Bags Collected', $unsorted_litter_subcategories_array, true) ? 'checked' : ''; ?>>
-                Number of Unsorted Bags Collected
-                <input type="number" name="csr_unsorted_litter_subcategories_count[Number of Unsorted Bags Collected]" value="<?php echo esc_attr($unsorted_litter_subcategories_count['Number of Unsorted Bags Collected'] ?? 0); ?>" step="1" min="0">
-            </label>
-        </fieldset>
-    </p>
-    <?php foreach ($categories as $key => $category): 
-        $weight = (string) get_post_meta($post->ID, $category['weight_meta'], true);
-        $items  = isset($category['items_meta']) ? (string) get_post_meta($post->ID, $category['items_meta'], true) : '';
-        $subcategories = (string) get_post_meta($post->ID, $category['subcategories_meta'], true);
-        $subcategories_array = $subcategories ? array_map('trim', explode(',', $subcategories)) : [];
 
-        $count_meta_key       = $category['subcategories_count_meta'] ?? null;
-        $counts_for_category  = ($count_meta_key && isset($counts_map[$count_meta_key])) ? $counts_map[$count_meta_key] : [];
-    ?>
-        <p>
-            <label for="<?php echo esc_attr($category['weight_meta']); ?>"><?php echo esc_html($category['label']); ?> (lbs):</label>
-            <input type="number" id="<?php echo esc_attr($category['weight_meta']); ?>" name="<?php echo esc_attr($category['weight_meta']); ?>" step="0.01" value="<?php echo esc_attr($weight); ?>">
-            <fieldset>
-                <legend><?php echo esc_html($category['label']); ?> Subcategories:</legend>
-                <?php foreach ($category['subcategories'] as $subcategory): ?>
-                    <?php
-                    $checked   = in_array($subcategory, $subcategories_array, true) ? 'checked' : '';
-                    $count_val = ($count_meta_key && isset($counts_for_category[$subcategory])) ? (int) $counts_for_category[$subcategory] : 0;
-                    ?>
-                    <label>
-                        <input type="checkbox" name="<?php echo esc_attr($category['subcategories_meta']); ?>[]" value="<?php echo esc_attr($subcategory); ?>" <?php echo $checked; ?>>
-                        <?php echo esc_html($subcategory); ?>
-                        <?php if ($count_meta_key): ?>
-                            <input
-                                type="number"
-                                name="<?php echo esc_attr($count_meta_key); ?>[<?php echo esc_attr($subcategory); ?>]"
-                                value="<?php echo esc_attr($count_val); ?>"
-                                step="1"
-                                min="0"
-                            >
-                        <?php endif; ?>
-                    </label>
-                <?php endforeach; ?>
-            </fieldset>
-            <?php if (isset($category['hazardous_subcategories'])): 
-                $hazardous_subcategories = (string) get_post_meta($post->ID, $category['hazardous_subcategories_meta'], true);
-                $hazardous_subcategories_array = $hazardous_subcategories ? array_map('trim', explode(',', $hazardous_subcategories)) : [];
-                $hazardous_counts = $counts_map['csr_hazardous_subcategories_count'] ?? [];
-            ?>
-                <fieldset>
-                    <legend>Hazardous Subcategories:</legend>
-                    <?php foreach ($category['hazardous_subcategories'] as $hazardous_subcategory): 
-                        $haz_checked = in_array($hazardous_subcategory, $hazardous_subcategories_array, true) ? 'checked' : '';
-                        $haz_count   = isset($hazardous_counts[$hazardous_subcategory]) ? (int) $hazardous_counts[$hazardous_subcategory] : 0;
-                    ?>
-                        <label>
-                            <input type="checkbox" name="<?php echo esc_attr($category['hazardous_subcategories_meta']); ?>[]" value="<?php echo esc_attr($hazardous_subcategory); ?>" <?php echo $haz_checked; ?>>
-                            <?php echo esc_html($hazardous_subcategory); ?>
-                            <input
-                                type="number"
-                                name="csr_hazardous_subcategories_count[<?php echo esc_attr($hazardous_subcategory); ?>]"
-                                value="<?php echo esc_attr($haz_count); ?>"
-                                step="1"
-                                min="0"
-                            >
-                        </label>
-                    <?php endforeach; ?>
-                </fieldset>
-            <?php endif; ?>
-        </p>
-    <?php endforeach; ?>
-    <p>
-        <label for="csr_notes">Notes:</label>
-        <textarea id="csr_notes" name="csr_notes" rows="5" style="width: 100%;"><?php echo esc_textarea($notes); ?></textarea>
-    </p>
-    <h3>Habitat Restoration</h3>
-    <p>
-        <label for="csr_trees_planted">Number of Trees Planted:</label>
-        <input type="number" id="csr_trees_planted" name="csr_trees_planted" value="<?php echo esc_attr($trees_planted); ?>" step="1" min="0">
-    </p>
-    <p>
-        <label for="csr_invasive_species_removed">Square Feet of Invasive Species Removed:</label>
-        <input type="number" id="csr_invasive_species_removed" name="csr_invasive_species_removed" value="<?php echo esc_attr($invasive_species_removed); ?>" step="1" min="0">
-    </p>
-    <p>
-        <label for="csr_invasive_species_names">Invasive Species Removed:</label>
-        <input type="text" id="csr_invasive_species_names" name="csr_invasive_species_names" value="<?php echo esc_attr($invasive_species_names); ?>" placeholder="Enter species names">
-    </p>
-    <p>
-        <label for="csr_invasive_species_weight">Weight Collected (lbs):</label>
-        <input type="number" id="csr_invasive_species_weight" name="csr_invasive_species_weight" value="<?php echo esc_attr($invasive_species_weight); ?>" step="0.01" min="0">
-    </p>
-    <p>
-        <label for="csr_native_plants_seeded">Native Plant Species Seeded:</label>
-        <select id="csr_native_plants_seeded" name="csr_native_plants_seeded">
-            <option value="" <?php selected($native_plants_seeded, ''); ?>>Select a species</option>
-            <option value="Milkweed" <?php selected($native_plants_seeded, 'Milkweed'); ?>>Milkweed</option>
-            <option value="Oak" <?php selected($native_plants_seeded, 'Oak'); ?>>Oak</option>
-            <option value="Pine" <?php selected($native_plants_seeded, 'Pine'); ?>>Pine</option>
-            <option value="Other" <?php selected($native_plants_seeded, 'Other'); ?>>Other</option>
-        </select>
-        <input type="text" id="csr_native_plants_seeded_other" name="csr_native_plants_seeded_other" value="<?php echo esc_attr($native_plants_seeded_other); ?>" placeholder="Specify if 'Other'">
-    </p>
-    <p>
-        <fieldset>
-            <legend>Erosion Control Methods Used:</legend>
-            <?php $erosion_methods = $erosion_control_methods ? array_map('trim', explode(',', $erosion_control_methods)) : []; ?>
-            <label>
-                <input type="checkbox" name="csr_erosion_control_methods[]" value="Mulching" <?php checked(in_array('Mulching', $erosion_methods, true)); ?>> Mulching
-            </label>
-            <label>
-                <input type="checkbox" name="csr_erosion_control_methods[]" value="Terracing" <?php checked(in_array('Terracing', $erosion_methods, true)); ?>> Terracing
-            </label>
-            <label>
-                <input type="checkbox" name="csr_erosion_control_methods[]" value="Planting ground cover" <?php checked(in_array('Planting ground cover', $erosion_methods, true)); ?>> Planting ground cover
-            </label>
-            <label>
-                <input type="checkbox" name="csr_erosion_control_methods[]" value="Other" <?php checked(in_array('Other', $erosion_methods, true)); ?>> Other
-            </label>
-            <textarea name="csr_erosion_control_notes" rows="3" placeholder="Additional notes (optional)"><?php echo esc_textarea($erosion_control_notes); ?></textarea>
-        </fieldset>
-    </p>
-    <p>
-        <label for="csr_volunteers_involved">Number of Volunteers Involved:</label>
-        <input type="number" id="csr_volunteers_involved" name="csr_volunteers_involved" value="<?php echo esc_attr($volunteers_involved); ?>" step="1" min="0">
-    </p>
-    <p>
-        <label>Uploaded Photos:</label>
-        <div>
-            <?php if (!empty($photos_array)): ?>
-                <?php foreach ($photos_array as $photo_id): ?>
-                    <?php $photo_url = wp_get_attachment_url($photo_id); ?>
-                    <?php if ($photo_url): ?>
-                        <img src="<?php echo esc_url($photo_url); ?>" alt="Uploaded Photo" style="max-width: 100px; margin: 5px;">
-                    <?php endif; ?>
-                <?php endforeach; ?>
+    <!-- 1. Executive Summary Hero Bar -->
+    <div class="csr-admin-hero-bar">
+        <div class="csr-admin-metric-card">
+            <div class="csr-admin-metric-value">
+                <span class="csr-admin-badge csr-badge-<?php echo esc_attr($reporter_type); ?>">
+                    <?php echo esc_html(ucfirst($reporter_type)); ?>
+                </span>
+            </div>
+            <div class="csr-admin-metric-label">Reporter Type</div>
+        </div>
+        <div class="csr-admin-metric-card">
+            <div class="csr-admin-metric-value"><?php echo esc_html(number_format($total_weight, 1)); ?> <span style="font-size:12px; font-weight:normal;">lbs</span></div>
+            <div class="csr-admin-metric-label">Total Waste Collected</div>
+        </div>
+        <div class="csr-admin-metric-card">
+            <div class="csr-admin-metric-value"><?php echo esc_html($volunteers_involved); ?></div>
+            <div class="csr-admin-metric-label">Volunteers Involved</div>
+        </div>
+        <div class="csr-admin-metric-card">
+            <div class="csr-admin-metric-value">📷 <?php echo esc_html(count($photos_array)); ?></div>
+            <div class="csr-admin-metric-label">Photos Uploaded</div>
+        </div>
+        <div class="csr-admin-metric-card">
+            <div class="csr-admin-metric-value">
+                <?php if (empty($audit_issues)): ?>
+                    <span class="csr-audit-badge audit-clean">✔ Clean</span>
+                <?php else: ?>
+                    <span class="csr-audit-badge audit-warning">⚠️ Notes (<?php echo count($audit_issues); ?>)</span>
+                <?php endif; ?>
+            </div>
+            <div class="csr-admin-metric-label">Audit Status</div>
+        </div>
+    </div>
+
+    <!-- 2. Data Quality Audit Panel -->
+    <div class="csr-admin-audit-panel <?php echo !empty($audit_issues) ? 'has-warnings' : 'is-clean'; ?>">
+        <div class="csr-admin-audit-title">
+            <?php if (!empty($audit_issues)): ?>
+                <span>⚠️ Data Quality & Verification Notes (<?php echo count($audit_issues); ?>)</span>
             <?php else: ?>
-                <p>No photos uploaded.</p>
+                <span>✔ Data Quality Check Passed</span>
             <?php endif; ?>
         </div>
-    </p>
+        <?php if (!empty($audit_issues)): ?>
+            <ul class="csr-admin-audit-list">
+                <?php foreach ($audit_issues as $issue): ?>
+                    <li>
+                        <strong>[<?php echo esc_html(strtoupper($issue['type'])); ?>]</strong>
+                        <?php echo esc_html($issue['message']); ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php else: ?>
+            <p style="margin:0; font-size:12px; color:#166534;">
+                This CSR report contains all essential contact details, location metadata, and reasonable weight metrics.
+            </p>
+        <?php endif; ?>
+    </div>
+
+    <!-- 3. Section: Reporter & Entity Information -->
+    <div class="csr-admin-review-section">
+        <div class="csr-admin-section-header">
+            <h3>👤 Reporter & Organization Information</h3>
+        </div>
+        <div class="csr-admin-grid-2">
+            <div class="csr-admin-info-group">
+                <div class="csr-admin-info-label">Reporter Details</div>
+                <p style="margin: 4px 0;">
+                    <label for="csr_name"><strong>Name:</strong></label>
+                    <input type="text" id="csr_name" name="csr_name" value="<?php echo esc_attr($name); ?>" style="width:100%;" required>
+                </p>
+                <p style="margin: 4px 0;">
+                    <label for="csr_email"><strong>Email:</strong></label>
+                    <input type="email" id="csr_email" name="csr_email" value="<?php echo esc_attr($email); ?>" style="width:100%;" required>
+                </p>
+                <p style="margin: 4px 0;">
+                    <label for="csr_reporter_type"><strong>Reporter Type:</strong></label>
+                    <select id="csr_reporter_type" name="csr_reporter_type" style="width:100%;">
+                        <option value="individual" <?php selected($reporter_type, 'individual'); ?>>Individual</option>
+                        <option value="team" <?php selected($reporter_type, 'team'); ?>>Team</option>
+                        <option value="organization" <?php selected($reporter_type, 'organization'); ?>>Organization</option>
+                    </select>
+                </p>
+                <p style="margin: 4px 0;">
+                    <label for="csr_organization_name"><strong>Organization Name:</strong></label>
+                    <input type="text" id="csr_organization_name" name="csr_organization_name" value="<?php echo esc_attr($org_name); ?>" style="width:100%;" placeholder="e.g. Acme Corp">
+                </p>
+                <p style="margin: 4px 0;">
+                    <label for="csr_team_name"><strong>Team Name:</strong></label>
+                    <input type="text" id="csr_team_name" name="csr_team_name" value="<?php echo esc_attr($team_name); ?>" style="width:100%;" placeholder="e.g. Green Team A">
+                </p>
+            </div>
+
+            <div class="csr-admin-info-group">
+                <div class="csr-admin-info-label">Event & Location Reference</div>
+                <p style="margin: 4px 0;">
+                    <label for="csr_event_name"><strong>Event Name:</strong></label>
+                    <input type="text" id="csr_event_name" name="csr_event_name" value="<?php echo esc_attr($event_name); ?>" style="width:100%;" placeholder="e.g. Earth Day Beach Cleanup">
+                </p>
+                <p style="margin: 4px 0;">
+                    <label for="csr_internal_reference"><strong>Internal Reference / Code:</strong></label>
+                    <input type="text" id="csr_internal_reference" name="csr_internal_reference" value="<?php echo esc_attr($internal_ref); ?>" style="width:100%;" placeholder="e.g. REF-2026-001">
+                </p>
+                <p style="margin: 4px 0;">
+                    <label for="csr_date"><strong>Reporting Date:</strong></label>
+                    <input type="date" id="csr_date" name="csr_date" value="<?php echo esc_attr($date); ?>" style="width:100%;" required>
+                </p>
+                <p style="margin: 4px 0;">
+                    <label for="csr_location"><strong>Cleanup Location:</strong></label>
+                    <input type="text" id="csr_location" name="csr_location" value="<?php echo esc_attr($location); ?>" style="width:100%;" required>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Section: Waste Categories Breakdown & Review -->
+    <div class="csr-admin-review-section">
+        <div class="csr-admin-section-header">
+            <h3>♻️ Waste Categories & Subcategories Breakdown</h3>
+            <button type="button" class="csr-admin-toggle-btn" onclick="toggleRawCategories(this)">
+                ✏️ Edit All Categories / Raw Inputs
+            </button>
+        </div>
+
+        <!-- Active / Reported Categories Summary Cards -->
+        <?php
+        $has_reported_waste = false;
+        ?>
+        <div class="csr-admin-category-grid">
+            <?php
+            // Check unsorted litter
+            if ((float) $unsorted_litter_weight > 0 || !empty($unsorted_litter_subcategories_array)):
+                $has_reported_waste = true;
+            ?>
+                <div class="csr-admin-active-card">
+                    <div class="csr-admin-active-card-header">
+                        <span><span class="csr-admin-category-icon" aria-hidden="true"><?php echo csr_get_category_icon_svg('unsorted_litter', ['size' => 16]); ?></span> Unsorted Litter</span>
+                        <span class="csr-admin-active-card-weight"><?php echo esc_html(number_format((float)$unsorted_litter_weight, 1)); ?> lbs</span>
+                    </div>
+                    <?php if (!empty($unsorted_litter_subcategories_array)): ?>
+                        <ul class="csr-admin-subcategory-list">
+                            <?php foreach ($unsorted_litter_subcategories_array as $subcat): ?>
+                                <li>
+                                    <span><?php echo esc_html($subcat); ?></span>
+                                    <strong><?php echo esc_html($unsorted_litter_subcategories_count[$subcat] ?? 0); ?> items</strong>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
+            <?php
+            foreach ($categories as $cat_key => $cat_def):
+                $w = (float) get_post_meta($post->ID, $cat_def['weight_meta'], true);
+                $subs = (string) get_post_meta($post->ID, $cat_def['subcategories_meta'], true);
+                $subs_arr = $subs ? array_map('trim', explode(',', $subs)) : [];
+                $count_key = $cat_def['subcategories_count_meta'] ?? null;
+                $counts = ($count_key && isset($counts_map[$count_key])) ? $counts_map[$count_key] : [];
+
+                if ($w > 0 || !empty($subs_arr)):
+                    $has_reported_waste = true;
+                ?>
+                    <div class="csr-admin-active-card">
+                        <div class="csr-admin-active-card-header">
+                            <span><span class="csr-admin-category-icon" aria-hidden="true"><?php echo csr_get_category_icon_svg($cat_key, ['size' => 16]); ?></span> <?php echo esc_html($cat_def['label']); ?></span>
+                            <span class="csr-admin-active-card-weight"><?php echo esc_html(number_format($w, 1)); ?> lbs</span>
+                        </div>
+                        <?php if (!empty($subs_arr)): ?>
+                            <ul class="csr-admin-subcategory-list">
+                                <?php foreach ($subs_arr as $sc): ?>
+                                    <li>
+                                        <span><?php echo esc_html($sc); ?></span>
+                                        <strong><?php echo esc_html($counts[$sc] ?? 0); ?> items</strong>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+                    </div>
+                <?php
+                endif;
+            endforeach;
+            ?>
+        </div>
+
+        <?php if (!$has_reported_waste): ?>
+            <p style="font-size:13px; color:#64748b; font-style:italic;">No active waste category weight or subcategories recorded for this report.</p>
+        <?php endif; ?>
+
+        <!-- Full Edit Raw Category Accordion -->
+        <div id="csr_raw_categories_panel" class="csr-admin-raw-fields" style="display:none;">
+            <h4>Raw Category Inputs & Edit Console</h4>
+            <p>
+                <label for="csr_unsorted_litter_weight"><span class="csr-admin-category-icon" aria-hidden="true"><?php echo csr_get_category_icon_svg('unsorted_litter', ['size' => 18]); ?></span> Unsorted Litter (lbs):</label>
+                <input type="number" id="csr_unsorted_litter_weight" name="csr_unsorted_litter_weight" value="<?php echo esc_attr($unsorted_litter_weight); ?>" step="0.01" min="0">
+                <fieldset>
+                    <legend>Unsorted Litter Subcategories:</legend>
+                    <label>
+                        <input type="checkbox" name="csr_unsorted_litter_subcategories[]" value="Number of Unsorted Bags Collected" <?php echo in_array('Number of Unsorted Bags Collected', $unsorted_litter_subcategories_array, true) ? 'checked' : ''; ?>>
+                        Number of Unsorted Bags Collected
+                        <input type="number" name="csr_unsorted_litter_subcategories_count[Number of Unsorted Bags Collected]" value="<?php echo esc_attr($unsorted_litter_subcategories_count['Number of Unsorted Bags Collected'] ?? 0); ?>" step="1" min="0">
+                    </label>
+                </fieldset>
+            </p>
+
+            <?php foreach ($categories as $key => $category): 
+                $weight = (string) get_post_meta($post->ID, $category['weight_meta'], true);
+                $subcategories = (string) get_post_meta($post->ID, $category['subcategories_meta'], true);
+                $subcategories_array = $subcategories ? array_map('trim', explode(',', $subcategories)) : [];
+                $count_meta_key       = $category['subcategories_count_meta'] ?? null;
+                $counts_for_category  = ($count_meta_key && isset($counts_map[$count_meta_key])) ? $counts_map[$count_meta_key] : [];
+            ?>
+                <p style="border-top:1px solid #f1f5f9; padding-top:10px;">
+                    <label for="<?php echo esc_attr($category['weight_meta']); ?>"><span class="csr-admin-category-icon" aria-hidden="true"><?php echo csr_get_category_icon_svg($key, ['size' => 18]); ?></span> <?php echo esc_html($category['label']); ?> (lbs):</label>
+                    <input type="number" id="<?php echo esc_attr($category['weight_meta']); ?>" name="<?php echo esc_attr($category['weight_meta']); ?>" step="0.01" value="<?php echo esc_attr($weight); ?>">
+                    <fieldset>
+                        <legend><?php echo esc_html($category['label']); ?> Subcategories:</legend>
+                        <?php foreach ($category['subcategories'] as $subcategory): ?>
+                            <?php
+                            $checked   = in_array($subcategory, $subcategories_array, true) ? 'checked' : '';
+                            $count_val = ($count_meta_key && isset($counts_for_category[$subcategory])) ? (int) $counts_for_category[$subcategory] : 0;
+                            ?>
+                            <label style="display:inline-block; margin-right:15px; margin-bottom:5px;">
+                                <input type="checkbox" name="<?php echo esc_attr($category['subcategories_meta']); ?>[]" value="<?php echo esc_attr($subcategory); ?>" <?php echo $checked; ?>>
+                                <?php echo esc_html($subcategory); ?>
+                                <?php if ($count_meta_key): ?>
+                                    <input
+                                        type="number"
+                                        name="<?php echo esc_attr($count_meta_key); ?>[<?php echo esc_attr($subcategory); ?>]"
+                                        value="<?php echo esc_attr($count_val); ?>"
+                                        step="1"
+                                        min="0"
+                                        style="width:60px;"
+                                    >
+                                <?php endif; ?>
+                            </label>
+                        <?php endforeach; ?>
+                    </fieldset>
+                    <?php if (isset($category['hazardous_subcategories'])): 
+                        $hazardous_subcategories = (string) get_post_meta($post->ID, $category['hazardous_subcategories_meta'], true);
+                        $hazardous_subcategories_array = $hazardous_subcategories ? array_map('trim', explode(',', $hazardous_subcategories)) : [];
+                        $hazardous_counts = $counts_map['csr_hazardous_subcategories_count'] ?? [];
+                    ?>
+                        <fieldset>
+                            <legend>Hazardous Subcategories:</legend>
+                            <?php foreach ($category['hazardous_subcategories'] as $hazardous_subcategory): 
+                                $haz_checked = in_array($hazardous_subcategory, $hazardous_subcategories_array, true) ? 'checked' : '';
+                                $haz_count   = isset($hazardous_counts[$hazardous_subcategory]) ? (int) $hazardous_counts[$hazardous_subcategory] : 0;
+                            ?>
+                                <label style="display:inline-block; margin-right:15px; margin-bottom:5px;">
+                                    <input type="checkbox" name="<?php echo esc_attr($category['hazardous_subcategories_meta']); ?>[]" value="<?php echo esc_attr($hazardous_subcategory); ?>" <?php echo $haz_checked; ?>>
+                                    <?php echo esc_html($hazardous_subcategory); ?>
+                                    <input
+                                        type="number"
+                                        name="csr_hazardous_subcategories_count[<?php echo esc_attr($hazardous_subcategory); ?>]"
+                                        value="<?php echo esc_attr($haz_count); ?>"
+                                        step="1"
+                                        min="0"
+                                        style="width:60px;"
+                                    >
+                                </label>
+                            <?php endforeach; ?>
+                        </fieldset>
+                    <?php endif; ?>
+                </p>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
+    <!-- 5. Section: Habitat Restoration & Environmental Metrics -->
+    <div class="csr-admin-review-section">
+        <div class="csr-admin-section-header">
+            <h3>🌱 Habitat Restoration & Volunteer Metrics</h3>
+        </div>
+        <div class="csr-admin-grid-2">
+            <div class="csr-admin-info-group">
+                <p style="margin:4px 0;">
+                    <label for="csr_volunteers_involved"><strong>Volunteers Involved:</strong></label>
+                    <input type="number" id="csr_volunteers_involved" name="csr_volunteers_involved" value="<?php echo esc_attr($volunteers_involved); ?>" step="1" min="0" style="width:100%;">
+                </p>
+                <p style="margin:4px 0;">
+                    <label for="csr_trees_planted"><strong>Trees Planted:</strong></label>
+                    <input type="number" id="csr_trees_planted" name="csr_trees_planted" value="<?php echo esc_attr($trees_planted); ?>" step="1" min="0" style="width:100%;">
+                </p>
+                <p style="margin:4px 0;">
+                    <label for="csr_native_plants_seeded"><strong>Native Plant Species Seeded:</strong></label>
+                    <select id="csr_native_plants_seeded" name="csr_native_plants_seeded" style="width:100%;">
+                        <option value="" <?php selected($native_plants_seeded, ''); ?>>Select a species</option>
+                        <option value="Milkweed" <?php selected($native_plants_seeded, 'Milkweed'); ?>>Milkweed</option>
+                        <option value="Oak" <?php selected($native_plants_seeded, 'Oak'); ?>>Oak</option>
+                        <option value="Pine" <?php selected($native_plants_seeded, 'Pine'); ?>>Pine</option>
+                        <option value="Other" <?php selected($native_plants_seeded, 'Other'); ?>>Other</option>
+                    </select>
+                    <input type="text" id="csr_native_plants_seeded_other" name="csr_native_plants_seeded_other" value="<?php echo esc_attr($native_plants_seeded_other); ?>" placeholder="Specify if 'Other'" style="width:100%; margin-top:4px;">
+                </p>
+            </div>
+
+            <div class="csr-admin-info-group">
+                <p style="margin:4px 0;">
+                    <label for="csr_invasive_species_removed"><strong>Invasive Species Area Removed (sq ft):</strong></label>
+                    <input type="number" id="csr_invasive_species_removed" name="csr_invasive_species_removed" value="<?php echo esc_attr($invasive_species_removed); ?>" step="1" min="0" style="width:100%;">
+                </p>
+                <p style="margin:4px 0;">
+                    <label for="csr_invasive_species_names"><strong>Invasive Species Names:</strong></label>
+                    <input type="text" id="csr_invasive_species_names" name="csr_invasive_species_names" value="<?php echo esc_attr($invasive_species_names); ?>" placeholder="e.g. Kudzu, English Ivy" style="width:100%;">
+                </p>
+                <p style="margin:4px 0;">
+                    <label for="csr_invasive_species_weight"><strong>Invasive Species Weight (lbs):</strong></label>
+                    <input type="number" id="csr_invasive_species_weight" name="csr_invasive_species_weight" value="<?php echo esc_attr($invasive_species_weight); ?>" step="0.01" min="0" style="width:100%;">
+                </p>
+            </div>
+        </div>
+
+        <div style="margin-top:12px;">
+            <fieldset>
+                <legend><strong>Erosion Control Methods Used:</strong></legend>
+                <?php $erosion_methods = $erosion_control_methods ? array_map('trim', explode(',', $erosion_control_methods)) : []; ?>
+                <label style="margin-right:15px;"><input type="checkbox" name="csr_erosion_control_methods[]" value="Mulching" <?php checked(in_array('Mulching', $erosion_methods, true)); ?>> Mulching</label>
+                <label style="margin-right:15px;"><input type="checkbox" name="csr_erosion_control_methods[]" value="Terracing" <?php checked(in_array('Terracing', $erosion_methods, true)); ?>> Terracing</label>
+                <label style="margin-right:15px;"><input type="checkbox" name="csr_erosion_control_methods[]" value="Planting ground cover" <?php checked(in_array('Planting ground cover', $erosion_methods, true)); ?>> Planting ground cover</label>
+                <label style="margin-right:15px;"><input type="checkbox" name="csr_erosion_control_methods[]" value="Other" <?php checked(in_array('Other', $erosion_methods, true)); ?>> Other</label>
+                <textarea name="csr_erosion_control_notes" rows="2" placeholder="Erosion control notes" style="width:100%; margin-top:5px;"><?php echo esc_textarea($erosion_control_notes); ?></textarea>
+            </fieldset>
+        </div>
+    </div>
+
+    <!-- 6. Section: Attached Photos Review Gallery -->
+    <div class="csr-admin-review-section">
+        <div class="csr-admin-section-header">
+            <h3>📷 Attached Field Photos (<?php echo count($photos_array); ?>)</h3>
+        </div>
+        <?php if (!empty($photos_array)): ?>
+            <div class="csr-admin-photo-gallery">
+                <?php foreach ($photos_array as $photo_id): ?>
+                    <?php
+                    $photo_url  = wp_get_attachment_url($photo_id);
+                    $edit_url   = get_edit_post_link($photo_id);
+                    $meta       = wp_get_attachment_metadata($photo_id);
+                    $file_name  = get_the_title($photo_id);
+                    ?>
+                    <?php if ($photo_url): ?>
+                        <div class="csr-admin-photo-item">
+                            <a href="<?php echo esc_url($photo_url); ?>" target="_blank" title="View Full Image">
+                                <img src="<?php echo esc_url($photo_url); ?>" alt="Uploaded CSR Photo">
+                            </a>
+                            <div class="photo-meta" title="<?php echo esc_attr($file_name); ?>">ID #<?php echo esc_html($photo_id); ?></div>
+                            <a href="<?php echo esc_url($photo_url); ?>" target="_blank">🔍 View Full</a>
+                            <?php if ($edit_url): ?>
+                                | <a href="<?php echo esc_url($edit_url); ?>" target="_blank">✏️ Edit Media</a>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <p style="font-size:13px; color:#64748b; margin:0;">No photos were uploaded with this submission.</p>
+        <?php endif; ?>
+
+        <p style="margin-top:12px; margin-bottom:0;">
+            <label for="csr_photos"><strong>Raw Attachment IDs (comma-separated):</strong></label>
+            <input type="text" id="csr_photos" name="csr_photos" value="<?php echo esc_attr($photos); ?>" style="width:100%; font-family:monospace; font-size:12px;">
+        </p>
+    </div>
+
+    <!-- 7. Section: Reporter Notes -->
+    <div class="csr-admin-review-section">
+        <div class="csr-admin-section-header">
+            <h3>📝 Reporter Notes & Comments</h3>
+        </div>
+        <p style="margin:0;">
+            <textarea id="csr_notes" name="csr_notes" rows="4" style="width: 100%; font-size:13px;" placeholder="No notes submitted with this report."><?php echo esc_textarea($notes); ?></textarea>
+        </p>
+    </div>
+
+    <!-- JavaScript Toggle Handler -->
+    <script>
+    function toggleRawCategories(btn) {
+        var panel = document.getElementById('csr_raw_categories_panel');
+        if (panel.style.display === 'none') {
+            panel.style.display = 'block';
+            if (btn) btn.innerText = '🔒 Hide Raw Category Edit Console';
+        } else {
+            panel.style.display = 'none';
+            if (btn) btn.innerText = '✏️ Edit All Categories / Raw Inputs';
+        }
+    }
+    </script>
     <?php
 }
 
-// Save meta box data
+// Save Meta Box Data Handler
 function ecoservants_save_meta_boxes($post_id) {
     if (!isset($_POST['csr_report_details_nonce_field']) || !wp_verify_nonce($_POST['csr_report_details_nonce_field'], 'csr_report_details_nonce')) {
         return;
@@ -1143,43 +1754,47 @@ function ecoservants_save_meta_boxes($post_id) {
     }
 
     $fields = [
-    // Core
-    'csr_name',
-    'csr_email',
-    'csr_date',
-    'csr_location',
-    'csr_notes',
+        // Core Identity & Entity
+        'csr_name',
+        'csr_email',
+        'csr_date',
+        'csr_location',
+        'csr_reporter_type',
+        'csr_organization_name',
+        'csr_team_name',
+        'csr_event_name',
+        'csr_internal_reference',
+        'csr_notes',
 
-    // Waste weights
-    'csr_plastic_waste_weight',
-    'csr_paper_waste_weight',
-    'csr_metal_waste_weight',
-    'csr_glass_waste_weight',
-    'csr_food_waste_weight',
-    'csr_cigarette_litter_weight',
-    'csr_textiles_weight',
-    'csr_medical_waste_weight',
-    'csr_sanitary_products_weight',
-    'csr_fishing_gear_weight',
-    'csr_styrofoam_hazardous_waste_weight',
-    'csr_miscellaneous_weight',
-    'csr_derelict_items_weight',
-    'csr_unsorted_litter_weight',
+        // Waste weights
+        'csr_plastic_waste_weight',
+        'csr_paper_waste_weight',
+        'csr_metal_waste_weight',
+        'csr_glass_waste_weight',
+        'csr_food_waste_weight',
+        'csr_cigarette_litter_weight',
+        'csr_textiles_weight',
+        'csr_medical_waste_weight',
+        'csr_sanitary_products_weight',
+        'csr_fishing_gear_weight',
+        'csr_styrofoam_hazardous_waste_weight',
+        'csr_miscellaneous_weight',
+        'csr_derelict_items_weight',
+        'csr_unsorted_litter_weight',
 
-    // Habitat / restoration
-    'csr_trees_planted',
-    'csr_invasive_species_removed',
-    'csr_invasive_species_names',
-    'csr_invasive_species_weight',
-    'csr_volunteers_involved',
-    'csr_native_plants_seeded',
-    'csr_native_plants_seeded_other',
-    'csr_erosion_control_notes',
+        // Habitat / restoration
+        'csr_trees_planted',
+        'csr_invasive_species_removed',
+        'csr_invasive_species_names',
+        'csr_invasive_species_weight',
+        'csr_volunteers_involved',
+        'csr_native_plants_seeded',
+        'csr_native_plants_seeded_other',
+        'csr_erosion_control_notes',
 
-    // Media
-    'csr_photos',
-];
-
+        // Media
+        'csr_photos',
+    ];
 
     foreach ($fields as $field) {
         if (isset($_POST[$field])) {
@@ -1202,10 +1817,10 @@ function ecoservants_save_meta_boxes($post_id) {
 
     // Save erosion control methods (checkbox array)
     if (isset($_POST['csr_erosion_control_methods']) && is_array($_POST['csr_erosion_control_methods'])) {
-    $methods = array_map('sanitize_text_field', $_POST['csr_erosion_control_methods']);
-    update_post_meta($post_id, 'csr_erosion_control_methods', implode(',', $methods));
+        $methods = array_map('sanitize_text_field', $_POST['csr_erosion_control_methods']);
+        update_post_meta($post_id, 'csr_erosion_control_methods', implode(',', $methods));
     } else {
-    delete_post_meta($post_id, 'csr_erosion_control_methods');
+        delete_post_meta($post_id, 'csr_erosion_control_methods');
     }
 
     $subcategories_count_fields = [
@@ -1231,6 +1846,7 @@ function ecoservants_save_meta_boxes($post_id) {
     }
 }
 add_action('save_post', 'ecoservants_save_meta_boxes');
+
 
 // Function to calculate total impact metrics, including item counts
 function ecoservants_calculate_totals() {

@@ -10,7 +10,7 @@ The system converts field activity into structured environmental impact data tha
 
 ## Current Production Release
 
-**Version:** `1.1.7-guided-interim`
+**Version:** `1.1.8-category-icons`
 
 The GitHub repository was synchronized with the current production CSR plugin on **August 14, 2026**.
 
@@ -105,6 +105,22 @@ The organizational data architecture will be expanded further under the CSR v2.0
 ---
 
 ## Waste Category Selection
+
+### Standardized Category Icon & Visual Asset System (Issue #18)
+The CSR plugin features a standardized SVG category icon system providing clear visual indicators for all waste categories across shortcodes, category card selectors, public impact summaries, and WordPress admin meta boxes.
+
+### Asset Conventions & Directory Structure
+- **Location**: All raw icon vector files are stored in `assets/icons/`.
+- **Naming Convention**: File names use lowercase kebab-case matching category slugs (`unsorted-litter.svg`, `plastic.svg`, `paper.svg`, `food.svg`, `metal.svg`, `glass.svg`, `cigarette.svg`, `textiles.svg`, `medical.svg`, `sanitary.svg`, `fishing.svg`, `styrofoam-hazardous.svg`, `miscellaneous.svg`, `derelict.svg`, `invasive-species.svg`).
+- **SVG Specifications**: Icons use clean, scalable vector paths with standard `viewBox="0 0 24 24"`, `width="24"`, `height="24"`, `fill="none"`, `stroke="currentColor"`, `stroke-width="2"`, `stroke-linecap="round"`, and `stroke-linejoin="round"`.
+
+### PHP Helper Functions
+- `csr_get_category_icon_svg($category_key, $args = [])`: Returns sanitized inline SVG markup for a given category key (e.g. `'plastic'`, `'invasive_species'`, `'styrofoam_hazardous'`). Supports custom sizing, CSS class assignment, and accessibility attributes (`aria-hidden="true"`, `role="img"`). Inline SVG rendering guarantees seamless rendering inside iframes, widgets, and page builders without cross-origin or relative URL issues.
+- `csr_get_all_category_icons()`: Returns an associative array of inline SVG markup strings for all 15 major categories.
+
+### Shortcode & Iframe Asset Enqueuing
+- All CSR shortcodes (`[csr_form]`, `[csr_impact_summary]`, `[top_impact]`, `[total_impact]`, `[wall_of_fame]`) invoke `ecoservants_enqueue_scripts()` on render, ensuring styles and scripts load reliably.
+- Embedded iframe endpoints (`?csr_form_iframe=1`, `?wall_of_fame_iframe=1`, `?total_impact_iframe=1`, `?top_impact_iframe=1`) include full charset/viewport metadata, versioned CSS stylesheets (`ECOSERVANTS_CSR_VERSION`), and required JavaScript modules (`carousel.js`, `csr-guided-wrapper.js`, `csr-category-cards.js`, `csr-wall-modal.js`).
 
 CSR uses visual category cards to help reporters identify the type of material collected.
 

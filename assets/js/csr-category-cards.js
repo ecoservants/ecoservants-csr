@@ -1,14 +1,8 @@
-// CSR Category Card Selection (Issue #7)
+// CSR Category Card Selection & Visual Asset System (Issues #7 & #18)
 //
-// Category cards are UI-only, no new form field, no new POST data, and
-// no changes needed in form-handler.php. Checking a card just shows the
-// existing detail block for that category (weight input plus subcategory
-// fieldset), unchecking hides it again. Values already entered in a
-// hidden block are preserved, not cleared, consistent with how Back
-// navigation already preserves data in the guided wrapper (#6).
-//
-// Subcategory picker redesign (pinwheel or grid) is Issue #8, this only
-// controls which category's existing detail block is visible.
+// Category cards present standardized, accessible SVG icons for each CSR category.
+// Checking a card reveals the corresponding detail block (weight input & subcategory fieldset),
+// and unchecking hides it. Values already entered in a hidden block are preserved.
 
 (function () {
     function ready(fn) {
